@@ -1,7 +1,7 @@
 {
 	"after":{
         "time_masking":{
-            "num_masks": 5,
+            "num_masks": 10,
             "mask_factor": 100,
         "p_upperbound": 0.05
         },

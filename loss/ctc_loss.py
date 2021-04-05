@@ -3,6 +3,10 @@ import tensorflow as tf
 # from loss.ctc_ops import ctc_loss_v2, ctc_label_dense_to_sparse, ctc_unique_labels
 from loss import ctc_ops
 
+"""
+https://github.com/hirofumi0810/neural_sp/blob/master/neural_sp/models/seq2seq/decoders/ctc.py
+"""
+
 def sparse_ctc_loss(y_true, y_pred, input_length, 
                     label_length, time_major=False):
     
