@@ -1,0 +1,4 @@
+fname,label
+MS_SNSD/noise_train/Station_1.wav,station
+MS_SNSD/noise_train/Car_1.wav,station
+MS_SNSD/noise_train/Field_1.wav,station
