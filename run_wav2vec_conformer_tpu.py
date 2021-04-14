@@ -432,8 +432,8 @@ def input_fn_builder(input_file,
                     max_tok=10
                     ):
   """Creates an `input_fn` closure to be passed to TPUEstimator."""
-
-  name_to_features = {
+  def input_fn(params):
+    name_to_features = {
       "clean_audio_resample": tf.FixedLenFeature([], tf.string),
       "noise_audio_resample": tf.FixedLenFeature([], tf.string),
       "speaker_id": tf.FixedLenFeature([], tf.int64),
@@ -441,123 +441,123 @@ def input_fn_builder(input_file,
       "gender_id": tf.FixedLenFeature([], tf.int64),
       "dialect_id": tf.FixedLenFeature([], tf.int64),
       "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
-  }
+    }
+    def _decode_record(record, name_to_features):
+      """Decodes a record to a TensorFlow example."""
+      example = tf.parse_single_example(record, name_to_features)
 
-  def _decode_record(record, name_to_features):
-    """Decodes a record to a TensorFlow example."""
-    example = tf.parse_single_example(record, name_to_features)
+      # tf.Example only supports tf.int64, but the TPU only supports tf.int32.
+      # So cast all int64 to int32.
+      noise_audio = read_audio.tf_read_raw_audio(example['noise_audio_resample'], 
+                        samples_per_second=samples_per_second,
+                          use_tpu=use_tpu)
+      noise_feature = audio_featurizer.tf_extract(noise_audio)
+      noise_aug_feature = feature_augmenter.after.augment(noise_feature)
 
-    # tf.Example only supports tf.int64, but the TPU only supports tf.int32.
-    # So cast all int64 to int32.
-    noise_audio = read_audio.tf_read_raw_audio(example['noise_audio_resample'], 
-                      samples_per_second=samples_per_second,
-                        use_tpu=use_tpu)
-    noise_feature = audio_featurizer.tf_extract(noise_audio)
-    noise_aug_feature = feature_augmenter.after.augment(noise_feature)
+      clean_audio = read_audio.tf_read_raw_audio(example['clean_audio_resample'], 
+                        samples_per_second=samples_per_second,
+                          use_tpu=use_tpu)
+      clean_feature = audio_featurizer.tf_extract(clean_audio)
+      clean_aug_feature = feature_augmenter.after.augment(clean_feature)
 
-    clean_audio = read_audio.tf_read_raw_audio(example['clean_audio_resample'], 
-                      samples_per_second=samples_per_second,
-                        use_tpu=use_tpu)
-    clean_feature = audio_featurizer.tf_extract(clean_audio)
-    clean_aug_feature = feature_augmenter.after.augment(clean_feature)
+      # [T, D, 1]
+      output_examples = {}
 
-    # [T, D, 1]
-    output_examples = {}
+      output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
+      output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
+      output_examples['clean_aug_feature'] = tf.cast(clean_aug_feature, dtype=tf.float32)
+      output_examples['noise_aug_feature'] = tf.cast(noise_aug_feature, dtype=tf.float32)
+      output_examples['clean_audio'] = tf.cast(clean_audio, dtype=tf.float32)
+      output_examples['noise_audio'] = tf.cast(noise_audio, dtype=tf.float32)
+      output_examples['speaker_id'] = tf.cast(example['speaker_id'], dtype=tf.int32)
+      output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
+      output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
+      output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
+      feature_shape = shape_list(noise_feature)
+      # [T, V, 1]
+      output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
+      [unique_labels, 
+      unique_indices] = ctc_ops.ctc_unique_labels(
+              tf.cast(example['transcript_id'], dtype=tf.int32)
+              )
+      output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
+      output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
+      
+      reduced_length = audio_utils.get_reduced_length(feature_shape[0], audio_featurizer.get_reduced_factor())
 
-    output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
-    output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
-    output_examples['clean_aug_feature'] = tf.cast(clean_aug_feature, dtype=tf.float32)
-    output_examples['noise_aug_feature'] = tf.cast(noise_aug_feature, dtype=tf.float32)
-    output_examples['clean_audio'] = tf.cast(clean_audio, dtype=tf.float32)
-    output_examples['noise_audio'] = tf.cast(noise_audio, dtype=tf.float32)
-    output_examples['speaker_id'] = tf.cast(example['speaker_id'], dtype=tf.int32)
-    output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
-    output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
-    output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
-    feature_shape = shape_list(noise_feature)
-    # [T, V, 1]
-    output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
-    [unique_labels, 
-    unique_indices] = ctc_ops.ctc_unique_labels(
-            tf.cast(example['transcript_id'], dtype=tf.int32)
-            )
-    output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
-    output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
-    
-    reduced_length = audio_utils.get_reduced_length(feature_shape[0], audio_featurizer.get_reduced_factor())
+      print(reduced_length, audio_featurizer.get_reduced_length(), "====")
+      inputs = tf.sequence_mask(reduced_length, audio_featurizer.get_reduced_length())
+      inputs = tf.cast(inputs, dtype=tf.int32)
+      span_mask_examples = span_mask.mask_generator(inputs, 
+                  audio_featurizer.get_reduced_length(), 
+                  num_predict=num_predict,
+                  mask_prob=mask_prob,
+                  stride=1, 
+                  min_tok=min_tok, 
+                  max_tok=max_tok)
+      output_examples['masked_mask'] = 1 - span_mask_examples['masked_mask']
+      output_examples['masked_positions'] = span_mask_examples['masked_positions']
+      output_examples['masked_weights'] = span_mask_examples['masked_weights']
+      
+      print(output_examples['masked_mask'], output_examples['masked_positions'], output_examples['masked_weights'])
+      return output_examples
 
-    print(reduced_length, audio_featurizer.get_reduced_length(), "====")
-    inputs = tf.sequence_mask(reduced_length, audio_featurizer.get_reduced_length())
-    inputs = tf.cast(inputs, dtype=tf.int32)
-    span_mask_examples = span_mask.mask_generator(inputs, 
-                audio_featurizer.get_reduced_length(), 
-                num_predict=num_predict,
-                mask_prob=mask_prob,
-                stride=1, 
-                min_tok=min_tok, 
-                max_tok=max_tok)
-    output_examples['masked_mask'] = 1 - span_mask_examples['masked_mask']
-    output_examples['masked_positions'] = span_mask_examples['masked_positions']
-    output_examples['masked_weights'] = span_mask_examples['masked_weights']
-    
-    print(output_examples['masked_mask'], output_examples['masked_positions'], output_examples['masked_weights'])
-    return output_examples
+    """The actual input function."""
 
-  """The actual input function."""
+    # For training, we want a lot of parallel reading and shuffling.
+    # For eval, we want no shuffling and parallel reading doesn't matter.
+    d = tf.data.TFRecordDataset(input_file)
+    if is_training:
+      d = d.repeat()
+      d = d.shuffle(buffer_size=100)
 
-  # For training, we want a lot of parallel reading and shuffling.
-  # For eval, we want no shuffling and parallel reading doesn't matter.
-  d = tf.data.TFRecordDataset(input_file)
-  if is_training:
-    d = d.repeat()
-    d = d.shuffle(buffer_size=100)
+    d = d.map(lambda record: _decode_record(record, name_to_features))
 
-  d = d.map(lambda record: _decode_record(record, name_to_features))
+    d = d.padded_batch(
+              batch_size=batch_size,
+              padded_shapes={
+                "clean_feature":tf.TensorShape(audio_featurizer.shape),
+                "noise_feature":tf.TensorShape(audio_featurizer.shape),
+                "clean_aug_feature":tf.TensorShape(audio_featurizer.shape),
+                "noise_aug_feature":tf.TensorShape(audio_featurizer.shape),
+                "clean_audio":tf.TensorShape([max_duration*samples_per_second]),
+                "noise_audio":tf.TensorShape([max_duration*samples_per_second]),
+                "speaker_id":tf.TensorShape([]),
+                "transcript_id":tf.TensorShape([transcript_seq_length]),
+                "gender_id":tf.TensorShape([]),
+                "dialect_id":tf.TensorShape([]),
+                "unique_labels":tf.TensorShape([transcript_seq_length]),
+                "unique_indices":tf.TensorShape([transcript_seq_length]),
+                "feature_seq_length":tf.TensorShape([]),
+                "masked_positions":tf.TensorShape([num_predict]),
+                "masked_weights":tf.TensorShape([num_predict]),
+                "masked_mask":tf.TensorShape([audio_featurizer.get_reduced_length()]),
+              },
+              padding_values={
+                "clean_feature":0.0,
+                "noise_feature":0.0,
+                "clean_aug_feature":0.0,
+                "noise_aug_feature":0.0,
+                "clean_audio":0.0,
+                "noise_audio":0.0,
+                "speaker_id":-1,
+                "transcript_id":0,
+                "gender_id":-1,
+                "dialect_id":-1,
+                "unique_labels":0,
+                "unique_indices":0,
+                "feature_seq_length":0,
+                "masked_positions":0,
+                "masked_weights":0.0,
+                "masked_mask":0.0
+              },
+              drop_remainder=drop_remainder
+          )
 
-  d = d.padded_batch(
-            batch_size=batch_size,
-            padded_shapes={
-              "clean_feature":tf.TensorShape(audio_featurizer.shape),
-              "noise_feature":tf.TensorShape(audio_featurizer.shape),
-              "clean_aug_feature":tf.TensorShape(audio_featurizer.shape),
-              "noise_aug_feature":tf.TensorShape(audio_featurizer.shape),
-              "clean_audio":tf.TensorShape([max_duration*samples_per_second]),
-              "noise_audio":tf.TensorShape([max_duration*samples_per_second]),
-              "speaker_id":tf.TensorShape([]),
-              "transcript_id":tf.TensorShape([transcript_seq_length]),
-              "gender_id":tf.TensorShape([]),
-              "dialect_id":tf.TensorShape([]),
-              "unique_labels":tf.TensorShape([transcript_seq_length]),
-              "unique_indices":tf.TensorShape([transcript_seq_length]),
-              "feature_seq_length":tf.TensorShape([]),
-              "masked_positions":tf.TensorShape([num_predict]),
-              "masked_weights":tf.TensorShape([num_predict]),
-              "masked_mask":tf.TensorShape([audio_featurizer.get_reduced_length()]),
-            },
-            padding_values={
-              "clean_feature":0.0,
-              "noise_feature":0.0,
-              "clean_aug_feature":0.0,
-              "noise_aug_feature":0.0,
-              "clean_audio":0.0,
-              "noise_audio":0.0,
-              "speaker_id":-1,
-              "transcript_id":0,
-              "gender_id":-1,
-              "dialect_id":-1,
-              "unique_labels":0,
-              "unique_indices":0,
-              "feature_seq_length":0,
-              "masked_positions":0,
-              "masked_weights":0.0,
-              "masked_mask":0.0
-            },
-            drop_remainder=drop_remainder
-        )
-
-  d = d.prefetch(batch_size*10)
-  d = d.apply(tf.data.experimental.ignore_errors())
-  return d
+    d = d.prefetch(batch_size*10)
+    d = d.apply(tf.data.experimental.ignore_errors())
+    return d
+  return input_fn
 
 def main(_):
   tf.logging.set_verbosity(tf.logging.INFO)
@@ -641,7 +641,7 @@ def main(_):
   feature_augmenter = augment_tf.Augmentation(featurizer_aug_config, 
                                             use_tf=True)
 
-  train_input_fn = lambda: input_fn_builder(
+  train_input_fn = input_fn_builder(
         input_file=input_files,
         is_training=True,
         drop_remainder=True,
