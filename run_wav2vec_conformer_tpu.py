@@ -461,10 +461,12 @@ def input_fn_builder(input_file,
       clean_feature = audio_featurizer.tf_extract(clean_audio)
       clean_aug_feature = feature_augmenter.after.augment(clean_feature)
       
-      noise_feature = noise_feature[:audio_featurizer.max_length, :, :]
-      noise_aug_feature = noise_aug_feature[:audio_featurizer.max_length, :, :]
-      clean_feature = clean_feature[:audio_featurizer.max_length, :, :]
-      clean_aug_feature = clean_aug_feature[:audio_featurizer.max_length, :, :]
+      feature_length = int(audio_featurizer.max_length)
+
+      noise_feature = noise_feature[:feature_length, :, :]
+      noise_aug_feature = noise_aug_feature[:feature_length, :, :]
+      clean_feature = clean_feature[:feature_length, :, :]
+      clean_aug_feature = clean_aug_feature[:feature_length, :, :]
       
       # [T, D, 1] 
       output_examples = {}
