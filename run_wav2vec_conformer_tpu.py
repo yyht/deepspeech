@@ -109,6 +109,10 @@ flags.DEFINE_integer("log_step_count_steps", 100,
 flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
 
+flags.DEFINE_integer("num_train_steps", 1000,
+                     "How many steps to make in each estimator call.")
+flags.DEFINE_integer("num_warmup_steps", 1000,
+                     "How many steps to make in each estimator call.")
 flags.DEFINE_integer("keep_checkpoint_max", 10,
                      "How many steps to make in each estimator call.")
 flags.DEFINE_integer("max_duration", 20,
