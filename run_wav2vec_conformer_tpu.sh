@@ -4,7 +4,7 @@ nohup python ./run_wav2vec_conformer_tpu.py \
 	--bert_config_file ./config/conformer_pretrain_v1.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
 	--output_dir chinese_asr_v1/conformer_pretrain_v1_linear \
-	--max_seq_length 512 \
+	--max_seq_length 511 \
 	--do_train True \
 	--train_batch_size 128 \
 	--learning_rate 1e-4 \
