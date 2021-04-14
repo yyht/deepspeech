@@ -650,7 +650,6 @@ def main(_):
         transcript_seq_length=FLAGS.transcript_seq_length,
         batch_size=FLAGS.train_batch_size,
         use_tpu=FLAGS.use_tpu,
-        distributed_mode=FLAGS.distributed_mode,
         num_predict=FLAGS.num_predict,
         mask_prob=FLAGS.mask_prob,
         min_tok=FLAGS.min_tok,
