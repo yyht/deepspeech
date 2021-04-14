@@ -1,12 +1,12 @@
 nohup python ./run_wav2vec_conformer_tpu.py \
 	--buckets gs://yyht_source/pretrain \
 	--data_dir chinese_asr_v1/ \
-	--bert_config_file ./config/conformer_pretrain_v1.json \
+	--bert_config_file ./config/conformer_pretrain_v1_small.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_pretrain_v1_linear \
-	--max_seq_length 511 \
+	--output_dir chinese_asr_v1/conformer_pretrain_v1_small_linear \
+	--max_seq_length 512 \
 	--do_train True \
-	--train_batch_size 128 \
+	--train_batch_size 512 \
 	--learning_rate 1e-4 \
 	--num_train_steps 1000000 \
 	--num_warmup_steps 10000 \
