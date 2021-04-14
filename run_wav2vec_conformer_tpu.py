@@ -495,7 +495,7 @@ def input_fn_builder(input_file,
                   stride=1, 
                   min_tok=min_tok, 
                   max_tok=max_tok)
-      output_examples['masked_mask'] = 1 - span_mask_examples['masked_mask']
+      output_examples['masked_mask'] = 1.0 - span_mask_examples['masked_mask']
       output_examples['masked_positions'] = span_mask_examples['masked_positions']
       output_examples['masked_weights'] = span_mask_examples['masked_weights']
       
