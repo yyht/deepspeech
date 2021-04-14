@@ -608,6 +608,10 @@ def main(_):
   import random
   random.shuffle(input_files)
 
+  tf.logging.info("*** Input Files ***")
+  for input_file in input_files:
+    tf.logging.info("  %s" % input_file)
+
   model_fn = model_fn_builder(
       model_config=model_config,
       init_checkpoint=init_checkpoint,
