@@ -252,7 +252,7 @@ class Conformer(object):
             # [B, T, 1]
             self.conv_subsampling *= tf.expand_dims(time_feature_mask, axis=-1)
           if freq_feature_mask is not None:
-            tf.logging.info("*** apply freq mask before linear_proj ***")
+            tf.logging.info("**** apply freq mask before linear_proj ***")
             freq_feature_mask = tf.cast(freq_feature_mask, dtype=tf.float32)
             self.conv_subsampling *= freq_feature_mask
 
