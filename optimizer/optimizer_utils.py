@@ -31,6 +31,8 @@ def create_adam_optimizer(
       if isinstance(grads[i], ops.IndexedSlices):
         grads[i] = ops.convert_to_tensor(grads[i])
       # grads[i] *= (1. / num_towers)
+  if use_tpu:
+    optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
   train_op = optimizer.apply_gradients(
       zip(grads, tvars), global_step=None)
@@ -77,6 +79,9 @@ def create_optimizer(
       if isinstance(grads[i], ops.IndexedSlices):
         grads[i] = ops.convert_to_tensor(grads[i])
       # grads[i] *= (1. / num_towers)
+
+  if use_tpu:
+    optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
   train_op = optimizer.apply_gradients(
       zip(grads, tvars), global_step=None)
