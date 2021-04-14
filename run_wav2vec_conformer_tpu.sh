@@ -31,4 +31,5 @@ nohup python ./run_wav2vec_conformer_tpu.py \
 	--max_tok 10 \
 	--mask_prob 0.2 \
 	--is_pretraining true \
-	--monitoring true
+	--monitoring true \
+	--transcript_seq_length 81
