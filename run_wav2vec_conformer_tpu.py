@@ -21,7 +21,7 @@ from __future__ import print_function
 import collections
 import os
 from model import conformer 
-from optimizer.optimizer_utils import create_optimizer, create_adam_optimizer
+from optimizer.optimizer_utils import (create_optimizer, create_adam_optimizer, naive_create_optimizer)
 import tensorflow as tf
 from audio_io import audio_featurizer_tf, read_audio
 from augment_io import augment_tf
@@ -295,16 +295,25 @@ def model_fn_builder(model_config,
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
       print("==update_ops==", update_ops)
       with tf.control_dependencies(update_ops):
-        train_op, output_learning_rate = create_optimizer(
-            total_loss, learning_rate, num_train_steps, 
-            weight_decay_rate=FLAGS.weight_decay_rate,
-            warmup_steps=num_warmup_steps, 
-            use_tpu=FLAGS.use_tpu,
-            warmup_proportion=FLAGS.warmup_proportion,
-            lr_decay_power=FLAGS.lr_decay_power,
-            layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-            n_transformer_layers=model_config.num_hidden_layers,
-            task_layers=[])
+        # train_op, output_learning_rate = create_optimizer(
+        #     total_loss, learning_rate, num_train_steps, 
+        #     weight_decay_rate=FLAGS.weight_decay_rate,
+        #     warmup_steps=num_warmup_steps, 
+        #     use_tpu=FLAGS.use_tpu,
+        #     warmup_proportion=FLAGS.warmup_proportion,
+        #     lr_decay_power=FLAGS.lr_decay_power,
+        #     layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+        #     n_transformer_layers=model_config.num_hidden_layers,
+        #     task_layers=[])
+
+        train_op, output_learning_rate = naive_create_optimizer(
+          total_loss, learning_rate, num_train_steps, 
+          weight_decay_rate=FLAGS.weight_decay_rate,
+          use_tpu=use_tpu,
+          warmup_steps=num_warmup_steps,
+          lr_decay_power=FLAGS.lr_decay_power,
+          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power
+          )
     
       hook_dict = {}
       # hook_dict['noise_loss'] = noise_loss
