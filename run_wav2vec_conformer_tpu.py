@@ -442,6 +442,7 @@ def input_fn_builder(input_file,
       "dialect_id": tf.FixedLenFeature([], tf.int64),
       "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
     }
+    batch_size = params["batch_size"]
     def _decode_record(record, name_to_features):
       """Decodes a record to a TensorFlow example."""
       example = tf.parse_single_example(record, name_to_features)
@@ -650,7 +651,7 @@ def main(_):
         max_duration=FLAGS.max_duration,
         samples_per_second=FLAGS.samples_per_second,
         transcript_seq_length=FLAGS.transcript_seq_length,
-        batch_size=local_batch_size,
+        batch_size=FLAGS.train_batch_size,
         use_tpu=FLAGS.use_tpu,
         worker_count=worker_count,
         task_index=task_index,
