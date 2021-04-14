@@ -336,7 +336,8 @@ def model_fn_builder(model_config,
           train_op=train_op,
           scaffold_fn=scaffold_fn,
           host_call=host_call,
-          training_hooks=training_hooks)
+          # training_hooks=training_hooks
+          )
         
     return output_spec
 
