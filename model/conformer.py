@@ -240,8 +240,8 @@ class Conformer(object):
                         units=config.ffm_hidden_size
                       )
             self.code_loss_dict = {}
-            self.code_discrete = self.code_dense
-            self.code_book = self.code_dense
+            self.code_discrete = tf.identity(self.code_dense)
+            self.code_book = tf.identity(self.code_dense)
 
       with tf.variable_scope('linear_proj'):
         if is_pretraining:
