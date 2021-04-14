@@ -176,7 +176,6 @@ flags.DEFINE_integer(
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
 flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
-flags.DEFINE_bool("use_tpu", False, "Whether to use TPU or GPU/CPU.")
 flags.DEFINE_bool("is_global_bn", False, "Whether to use TPU or GPU/CPU.")
 
 
