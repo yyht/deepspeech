@@ -376,6 +376,7 @@ def get_masked_lm_output(
 
   masked_tensor_shape = shape_list(masked_input_tensor)
   # [batch_size*num_predict]
+  label_weights = tf.cast(label_weights, dtype=tf.float32)
   label_weights = tf.reshape(label_weights, [-1])
   # [batch_size*num_predict, 1]
   label_mask = tf.expand_dims(label_weights, axis=-1)
@@ -567,8 +568,8 @@ def input_fn_builder(input_file,
               drop_remainder=drop_remainder
           )
 
-    d = d.prefetch(batch_size*10)
-    # d = d.apply(tf.data.experimental.ignore_errors())
+    # d = d.prefetch(batch_size*10)
+    d = d.apply(tf.data.experimental.ignore_errors())
     return d
   return input_fn
 
