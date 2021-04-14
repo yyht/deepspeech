@@ -252,7 +252,7 @@ class Conformer(object):
             # [B, T, 1]
             self.conv_subsampling *= tf.expand_dims(time_feature_mask, axis=-1)
           if freq_feature_mask is not None:
-            tf.logging.info("*** apply freq mask before linear_proj ***")
+            tf.logging.info("***@* apply freq mask before linear_proj ***")
             freq_feature_mask = tf.cast(freq_feature_mask, dtype=tf.float32)
             self.conv_subsampling *= freq_feature_mask
 
@@ -263,7 +263,7 @@ class Conformer(object):
         self.linear_proj = tf.nn.dropout(self.linear_proj, 
                             keep_prob=1-config.proj_dropout)
 
-        tf.logging.info("*** linear_proj ***")
+        tf.logging.info("**** linear_proj ****")
         tf.logging.info(self.linear_proj)
 
       if input_length is not None:
@@ -653,7 +653,8 @@ def batch_norm(inputs, is_training,
               batch_norm_decay=0.997, 
               batch_norm_eps=1e-5,
               is_global_bn=False):
-  return global_batch_norm.batch_norm(inputs=inputs, 
+  return global_batch_norm(inputs=inputs,
+            is_training=is_training, 
             batch_norm_decay=batch_norm_decay,
             batch_norm_eps=batch_norm_eps,
             is_global_bn=is_global_bn)
