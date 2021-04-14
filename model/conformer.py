@@ -653,7 +653,8 @@ def batch_norm(inputs, is_training,
               batch_norm_decay=0.997, 
               batch_norm_eps=1e-5,
               is_global_bn=False):
-  return global_batch_norm.batch_norm(inputs=inputs, 
+  return global_batch_norm(inputs=inputs,
+            is_training=is_training, 
             batch_norm_decay=batch_norm_decay,
             batch_norm_eps=batch_norm_eps,
             is_global_bn=is_global_bn)
