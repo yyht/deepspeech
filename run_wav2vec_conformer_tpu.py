@@ -500,6 +500,11 @@ def input_fn_builder(input_file,
       output_examples['masked_weights'] = span_mask_examples['masked_weights']
       
       print(output_examples['masked_mask'], output_examples['masked_positions'], output_examples['masked_weights'])
+      for name in list(output_examples.keys()):
+        t = output_examples[name]
+        if t.dtype == tf.int64:
+          t = tf.to_int32(t)
+        output_examples[name] = t
       return output_examples
 
     """The actual input function."""

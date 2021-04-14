@@ -297,7 +297,7 @@ def mask_generator(inputs, tgt_len,
       masked_weights=target_mask, 
       masked_target=inputs)
 
-  masked_positions = tf.argmax(example['target_mapping'], axis=-1)
+  masked_positions = tf.cast(tf.argmax(example['target_mapping'], axis=-1), dtype=tf.int32)
   example['masked_positions'] = tf.cast(masked_positions, dtype=tf.int32)
   example['masked_mask'] = tf.cast(is_target, dtype=tf.float32)
 
