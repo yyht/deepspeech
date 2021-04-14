@@ -153,6 +153,7 @@ flags.DEFINE_string(
     "Initial checkpoint (usually from a pre-trained BERT model).")
 flags.DEFINE_bool("if_focal_ctc", False, "Whether to use TPU or GPU/CPU.")
 flags.DEFINE_bool("is_pretraining", False, "Whether to use TPU or GPU/CPU.")
+flags.DEFINE_bool("monitoring", False, "Whether to use TPU or GPU/CPU.")
 
 flags.DEFINE_string(
     "target_feature_mode", "soft-em",
