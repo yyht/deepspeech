@@ -311,14 +311,14 @@ def model_fn_builder(model_config,
       hook_dict['clean_loss'] = clean_loss
       # for key in noise_code_loss_dict:
       #   hook_dict["noise_{}".format(key)] = noise_code_loss_dict[key]
-      for key in clean_code_loss_dict:
-        hook_dict["clean_{}".format(key)] = clean_code_loss_dict[key]
+      # for key in clean_code_loss_dict:
+      #   hook_dict["clean_{}".format(key)] = clean_code_loss_dict[key]
       
       hook_dict['learning_rate'] = output_learning_rate
-      logging_hook = tf.train.LoggingTensorHook(
-        hook_dict, every_n_iter=100)
-      training_hooks = []
-      training_hooks.append(logging_hook)
+      # logging_hook = tf.train.LoggingTensorHook(
+      #   hook_dict, every_n_iter=100)
+      # training_hooks = []
+      # training_hooks.append(logging_hook)
 
       if FLAGS.monitoring and hook_dict:
         host_call = log_utils.construct_scalar_host_call_v1(
