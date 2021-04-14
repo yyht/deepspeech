@@ -648,7 +648,7 @@ def residual_ffm_block(inputs, hidden_size,
   outputs = inputs + fc_factor * outputs
   return outputs
 
-from model.global_bn_utils import global_batch_norm
+from model.global_bn_utils import batch_norm as global_batch_norm
 def batch_norm(inputs, is_training, 
               batch_norm_decay=0.997, 
               batch_norm_eps=1e-5,
