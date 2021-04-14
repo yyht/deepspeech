@@ -263,7 +263,7 @@ class Conformer(object):
         self.linear_proj = tf.nn.dropout(self.linear_proj, 
                             keep_prob=1-config.proj_dropout)
 
-        tf.logging.info("*** linear_proj ***")
+        tf.logging.info("**** linear_proj ****")
         tf.logging.info(self.linear_proj)
 
       if input_length is not None:
