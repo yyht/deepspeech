@@ -466,7 +466,7 @@ def input_fn_builder(input_file,
       clean_feature = clean_feature[:audio_featurizer.max_length, :, :]
       clean_aug_feature = clean_aug_feature[:audio_featurizer.max_length, :, :]
       
-      # [T, D, 1]
+      # [T, D, 1] 
       output_examples = {}
 
       output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
