@@ -346,7 +346,7 @@ def ctc_loss_dense(labels,
       Logits and labels are dense arrays with padding rather than SparseTensor.
       The only mode supported is the same as:
         preprocess_collapse_repeated=False, ctc_merge_repeated=True
-        To collapse labels, the caller can preprocess label sequence first.
+         To collapse labels, the caller can preprocess label sequence first.
     The dense implementation supports both CPU, GPU and TPU. A fast path is
     provided that significantly improves memory use for large vocabulary if the
     caller preprocesses label sequences to get unique label indices on the CPU
