@@ -7,8 +7,6 @@ import tensorflow as tf
 
 from tensorflow.python.tpu import tpu_function  # pylint: disable=g-direct-tensorflow-import
 
-
-FLAGS = flags.FLAGS
 BATCH_NORM_EPSILON = 1e-5
 
 class BatchNormalization(tf.layers.BatchNormalization):
