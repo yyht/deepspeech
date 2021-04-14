@@ -5,6 +5,8 @@ from audio_io import read_audio
 from audio_io import utils
 import random, librosa
 
+import time
+
 def snr_mixer(clean, noise, snr):
   # Normalizing to -25 dB FS
   rmsclean = (clean**2).mean()**0.5
@@ -30,10 +32,11 @@ def noise_synthesizer(clean_path,
                     gender_id,
                     dialect_id,
                     transcript_id,
-                    tfrecord_writer,
                     tf_sess,
                     sample_rate=16000,
-                    target_sample_rate=8000):
+                    target_sample_rate=8000,
+                    pinyin_id=None,
+                    tf_string_api=None):
   clean_speech = read_audio.read_raw_audio(clean_path, sample_rate=sample_rate)
   noise_wave = read_audio.read_raw_audio(noise_path, sample_rate=sample_rate)
 
@@ -66,8 +69,15 @@ def noise_synthesizer(clean_path,
 
   clean, noisenewlevel, noisy_speech = snr_mixer(clean_speech, noise_wave_segment, SNR[snr_level])
 
-  resample_clean_speech = librosa.resample(clean_speech, sample_rate, target_sample_rate)
-  resample_noisy_speech = librosa.resample(noisy_speech, sample_rate, target_sample_rate)
+  start = time.time()
+
+  if sample_rate != target_sample_rate:
+    resample_clean_speech = librosa.resample(clean_speech, sample_rate, target_sample_rate)
+    resample_noisy_speech = librosa.resample(noisy_speech, sample_rate, target_sample_rate)
+  else:
+    resample_clean_speech = clean_speech
+    resample_noisy_speech = noisy_speech
+  # print("==resample time==", time.time()-start)
 
   resample_clean_speech = resample_clean_speech.astype(np.float32)
   resample_noisy_speech = resample_noisy_speech.astype(np.float32)
@@ -78,20 +88,28 @@ def noise_synthesizer(clean_path,
   # clean_speech_string = read_audio.tf_encode_raw_audio(clean_speech, target_sample_rate)
   # noisy_speech_string = read_audio.tf_encode_raw_audio(noisy_speech, target_sample_rate)
 
-  resample_clean_speech_string = read_audio.tf_encode_raw_audio(resample_clean_speech, target_sample_rate)
-  resample_noisy_speech_string = read_audio.tf_encode_raw_audio(resample_noisy_speech, target_sample_rate)
+  start = time.time()
 
-  [
-  # clean_speech_b, 
-  # noisy_speech_b, 
-  resample_clean_speech_b,
-  resample_noisy_speech_b
-  ] = tf_sess.run([
-                # clean_speech_string, 
-                # noisy_speech_string, 
-                resample_clean_speech_string,
-                resample_noisy_speech_string
-                ])
+  if not tf_string_api:
+    resample_clean_speech_string = read_audio.tf_encode_raw_audio(resample_clean_speech, target_sample_rate)
+    resample_noisy_speech_string = read_audio.tf_encode_raw_audio(resample_noisy_speech, target_sample_rate)
+
+    [
+    # clean_speech_b, 
+    # noisy_speech_b, 
+    resample_clean_speech_b,
+    resample_noisy_speech_b
+    ] = tf_sess.run([
+                  # clean_speech_string, 
+                  # noisy_speech_string, 
+                  resample_clean_speech_string,
+                  resample_noisy_speech_string
+                  ])
+  else:
+    resample_clean_speech_b = tf_string_api.run(resample_clean_speech)
+    resample_noisy_speech_b = tf_string_api.run(resample_noisy_speech)
+
+  # print("==tf sess run time==", time.time()-start)
 
   feature = {
     # "clean_audio": utils.bytestring_feature([clean_speech_b]),
@@ -104,6 +122,7 @@ def noise_synthesizer(clean_path,
     "dialect_id": utils.int64_feature([dialect_id]),
     "transcript_id": utils.int64_feature(transcript_id)
   }
+  if pinyin_id is not None:
+    feature['transcript_pinyin_id'] = utils.int64_feature(pinyin_id)
   example = tf.train.Example(features=tf.train.Features(feature=feature))
-  tfrecord_writer.write(example.SerializeToString())
-  return tfrecord_writer, resample_clean_speech.shape[0], resample_clean_speech.shape[0]
+  return example, resample_clean_speech.shape[0], resample_clean_speech.shape[0]

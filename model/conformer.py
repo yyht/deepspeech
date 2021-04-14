@@ -3,12 +3,22 @@ import tensorflow as tf
 import numpy as np
 from vqvae import soft_em
 from model import transformer_relative_position
+from audio_io import utils as audio_utils
+import collections
+import copy
+import json
+import math
+import re
+import numpy as np
+import six
+import tensorflow as tf
+import os
 
 """
 https://github.com/huseinzol05/NLP-Models-Tensorflow/blob/master/speech-to-text/wav2vec.ipynb
 """ 
 
-class Wav2VecConfig(object):
+class ConformerConfig(object):
   def __init__(self,
         vocab_size,
         subsampling_filters=[144, 144],
@@ -30,11 +40,28 @@ class Wav2VecConfig(object):
         mha_relative_position_type="relative_t5",
         mha_relative_position_embedding_type="sinusoidal_trainable",
         mha_num_hidden_layers=4,
+        mha_attention_probs_dropout_prob=0.1,
+        mha_hidden_dropout_prob=0.1,
+        mha_use_relative_position=True,
 
-        cnn_filters=256,
-        cnn_kernel_sizes=9,
+        cnn_kernel_sizes=32,
         cnn_strides=1,
-        cnn_depth_multiplier=1):
+        cnn_depth_multiplier=1,
+        cnn_dropout_prob=0.1,
+        is_cnn_batch_norm=True,
+        is_cnn_padding=True,
+
+        fc_layers=1,
+        fc_hidden_size=1,
+        fc_dropout_rate=0.1,
+
+        bottleneck_size=384,
+        bottleneck_dims=256,
+
+        vqvae_beta=0.25,
+        vqvae_gamma=0.1,
+
+        time_major=False):
 
     self.vocab_size = vocab_size
     self.subsampling_filters = subsampling_filters
@@ -58,39 +85,94 @@ class Wav2VecConfig(object):
     self.mha_relative_position_type = mha_relative_position_type
     self.mha_relative_position_embedding_type = mha_relative_position_embedding_type
     self.mha_num_hidden_layers = mha_num_hidden_layers
+    self.mha_attention_probs_dropout_prob = mha_attention_probs_dropout_prob
+    self.mha_hidden_dropout_prob = mha_hidden_dropout_prob
+    self.mha_use_relative_position = mha_use_relative_position
 
-    self.cnn_filters = cnn_filters
     self.cnn_kernel_sizes = cnn_kernel_sizes
     self.cnn_strides = cnn_strides
     self.cnn_depth_multiplier = cnn_depth_multiplier
 
-    self.conv_dropout_rate = conv_dropout_rate
+    self.cnn_dropout_prob = cnn_dropout_prob
     self.is_cnn_batch_norm = is_cnn_batch_norm
     self.is_cnn_padding = is_cnn_padding
 
-class Wav2Vec(object):
+    self.fc_layers = fc_layers
+    self.fc_hidden_size = fc_hidden_size
+    self.fc_dropout_rate = fc_dropout_rate
+
+    self.vqvae_beta = vqvae_beta
+    self.vqvae_gamma = vqvae_gamma
+
+    self.bottleneck_size = bottleneck_size
+    self.bottleneck_dims = bottleneck_dims
+
+    self.time_major = time_major
+
+    self.reduction_factor = 1
+    for s in self.subsampling_strides: 
+      self.reduction_factor *= s[0]
+    tf.logging.info("*** reduction_factor ***")
+    tf.logging.info(self.reduction_factor)
+
+  @classmethod
+  def from_dict(cls, json_object):
+    """Constructs a `BertConfig` from a Python dictionary of parameters."""
+    config = ConformerConfig(vocab_size=None)
+    for (key, value) in six.iteritems(json_object):
+      config.__dict__[key] = value
+      print(key, value, '===model parameters===')
+    return config
+
+  @classmethod
+  def from_json_file(cls, json_file):
+    """Constructs a `BertConfig` from a json file of parameters."""
+    with tf.gfile.GFile(json_file, "r") as reader:
+      text = reader.read()
+    return cls.from_dict(json.loads(text))
+
+  def to_dict(self):
+    """Serializes this instance to a Python dictionary."""
+    output = copy.deepcopy(self.__dict__)
+    return output
+
+  def to_json_string(self):
+    """Serializes this instance to a JSON string."""
+    return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
+
+
+class Conformer(object):
   def __init__(self, 
               config,
-              sequences, 
+              sequences,
+              input_length,
               is_training=False,
-              sequences_mask=None):
+              is_pretraining=False,
+              time_feature_mask=None,
+              freq_feature_mask=None,
+              target_feature_mode='linear',
+              is_global_bn=False):
 
+    config = copy.deepcopy(config)
+    self.config = copy.deepcopy(config)
     if not is_training:
-      config.transformer_hidden_dropout_prob = 0.0
-      config.transformer_attention_probs_dropout_prob = 0.0
+      config.mha_hidden_dropout_prob = 0.0
+      config.mha_attention_probs_dropout_prob = 0.0
       config.subsampling_dropout = 0.0
       config.proj_dropout = 0.0
       config.ffm_dropout = 0.0
-      config.conv_dropout_rate = 0.0
+      config.cnn_dropout_prob = 0.0
+      config.fc_dropout_rate = 0.0
 
     initializer = tf.truncated_normal_initializer(stddev=0.046875, dtype=tf.float32)
 
-    with tf.variable_scope('wav2vec'):
+    with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
       # since feature extraction will add extra dims on input:
       # [batch_size, time, n_dims]--->[batch_size, time, n_dims, 1]
       # so, no need for dimension expandims
       sequences_shape = get_shape_list(sequences, expected_rank=[3,4])
       if len(sequences_shape) == 4:
+        tf.logging.info("*** specturm input ***")
         # perform raw audio input
         with tf.variable_scope('conv_downsampling'):
           [self.conv_subsampling, 
@@ -100,15 +182,20 @@ class Wav2Vec(object):
                                   strides=config.subsampling_strides,
                                   dropout_rate=config.subsampling_dropout,
                                   is_training=is_training,
-                                  is_batch_norm=False,
-                                  is_padding=True)
+                                  is_batch_norm=config.is_cnn_batch_norm,
+                                  is_padding=config.is_cnn_padding,
+                                  is_global_bn=is_global_bn)
 
         conv_subsampling_shape = get_shape_list(self.conv_subsampling, expected_rank=[4])
         self.conv_subsampling = tf.reshape(self.conv_subsampling, 
                   shape=[conv_subsampling_shape[0], -1, 
                   conv_subsampling_shape[2] * conv_subsampling_shape[3]])
 
+        tf.logging.info("*** conv down-sampling ***")
+        tf.logging.info(self.conv_subsampling)
+
       elif len(sequences_shape) == 3:
+        tf.logging.info("*** audio signal input ***")
         with tf.variable_scope('conv_downsampling'):
           [self.conv_subsampling, 
           self.reduction_factor] = conv1d_block(sequences,
@@ -120,22 +207,90 @@ class Wav2Vec(object):
                                     is_batch_norm=False,
                                     is_padding=True)
 
+        tf.logging.info("*** conv down-sampling ***")
+        tf.logging.info(self.conv_subsampling)
+
       conv_subsampling_shape = get_shape_list(self.conv_subsampling, expected_rank=[3])
       assert len(conv_subsampling_shape) == 3
 
+      self.unmasked_conv_subsampling = tf.identity(self.conv_subsampling)
+
+      if is_pretraining:
+
+        if target_feature_mode == 'soft-em':
+          # apply softem
+          tf.logging.info("*** apply soft em ***")
+          with tf.variable_scope('discrete_bottleneck'):
+
+            [self.code_book,
+            self.code_discrete, 
+            self.code_dense, 
+            self.code_loss_dict] = soft_em.discrete_bottleneck(
+                      self.conv_subsampling,
+                      config.bottleneck_size,
+                      config.bottleneck_dims,
+                      beta=config.vqvae_beta,
+                      gamma=config.vqvae_gamma,
+                      is_training=is_training)
+        elif target_feature_mode == 'linear':
+          tf.logging.info("*** apply linear proj ***")
+          with tf.variable_scope('pretrain_linear_proj'):
+            self.code_dense = tf.layers.dense(
+                        self.conv_subsampling, 
+                        units=config.ffm_hidden_size
+                      )
+            self.code_loss_dict = {}
+            self.code_discrete = self.code_dense
+            self.code_book = self.code_dense
+
       with tf.variable_scope('linear_proj'):
-        self.linear_proj = tf.layers.dense(self.conv_subsampling, 
-                    units=conv_subsampling_shape[-1]
-                  )
+        if is_pretraining:
+          tf.logging.info("*** apply mask before linear_proj ***")
+          if time_feature_mask is not None:
+            tf.logging.info("*** apply time mask before linear_proj ***")
+            time_feature_mask = tf.cast(time_feature_mask, dtype=tf.float32)
+            # [B, T, 1]
+            self.conv_subsampling *= tf.expand_dims(time_feature_mask, axis=-1)
+          if freq_feature_mask is not None:
+            tf.logging.info("*** apply freq mask before linear_proj ***")
+            freq_feature_mask = tf.cast(freq_feature_mask, dtype=tf.float32)
+            self.conv_subsampling *= freq_feature_mask
+
+        self.linear_proj = tf.layers.dense(
+                      self.conv_subsampling, 
+                      units=config.ffm_hidden_size
+                    )
         self.linear_proj = tf.nn.dropout(self.linear_proj, 
                             keep_prob=1-config.proj_dropout)
 
+        tf.logging.info("*** linear_proj ***")
+        tf.logging.info(self.linear_proj)
+
+      if input_length is not None:
+        tf.logging.info("*** generate attention mask ***")
+        reduced_length = audio_utils.get_reduced_length(input_length, self.reduction_factor)
+        sequence_mask = tf.sequence_mask(reduced_length, conv_subsampling_shape[1])
+        sequence_mask = tf.cast(sequence_mask, dtype=tf.float32)
+        tf.logging.info("*** sequence_mask ***")
+        tf.logging.info(sequence_mask)
+        if time_feature_mask is not None:
+          sequence_mask *= time_feature_mask
+        self.attention_mask = transformer_relative_position.create_attention_mask_from_input_mask(
+                                sequence_mask,
+                                sequence_mask)
+      else:
+        self.attention_mask = None
+
       with tf.variable_scope('encoder'):
+        tf.logging.info("*** mha encoder ***")
         mha_attention_head_size = config.mha_hidden_size // config.mha_num_attention_heads
+        tf.logging.info("*** mha_attention_head_size ***")
+        tf.logging.info(mha_attention_head_size)
+
         [self.relative_position_embeddings, 
           self.relative_position_table] = transformer_relative_position._generate_relative_positions_embeddings(
-                      input_shape[1], 
-                      depth=mha_attention_head_size,
+                      conv_subsampling_shape[1], 
+                      depth=config.mha_num_attention_heads,
                       max_relative_position=config.mha_max_relative_position, 
                       name="relative_positions_bias",
                       num_buckets=config.mha_num_buckets,
@@ -149,39 +304,145 @@ class Wav2Vec(object):
 
         self.conformer_block = conformer(pre_output,
             ffm_hidden_size=config.ffm_hidden_size,
-            ffm_dropout_rate=config.ffm_dropout_rate,
+            ffm_dropout_rate=config.ffm_dropout,
             ffm_fc_factor=config.ffm_fc_factor,
             ffm_expansion_factor=config.ffm_expansion_factor,
             mha_relative_position_embeddings=self.relative_position_embeddings,
             mha_num_attention_heads=config.mha_num_attention_heads,
-            mha_attention_head_size=config.mha_attention_head_size,
+            mha_attention_head_size=mha_attention_head_size,
             mha_attention_probs_dropout_prob=config.mha_attention_probs_dropout_prob,
+            mha_hidden_dropout_prob=config.mha_hidden_dropout_prob,
             mha_initializer_range=config.mha_initializer_range,
             mha_use_relative_position=config.mha_use_relative_position,
             mha_num_hidden_layers=config.mha_num_hidden_layers,
-            conv_filters=config.conv_filters,
-            conv_kernel_sizes=config.conv_kernel_sizes,
-            conv_strides=config.conv_strides,
-            cnn_depth_multiplier=config.cnn_depth_multiplier,
-            conv_dropout_prob=config.conv_dropout_prob,
+            mha_attention_mask=self.attention_mask,
+            conv_strides=config.cnn_strides,
+            conv_depth_multiplier=config.cnn_depth_multiplier,
+            conv_dropout_prob=config.cnn_dropout_prob,
             relative_position_type=config.mha_relative_position_type,
-            is_training=is_training)
+            is_training=is_training,
+            is_global_bn=is_global_bn)
+
+      with tf.variable_scope('fc_module'):
+        self.fc_output = fc_block(self.conformer_block[-1],
+                  fc_layers=config.fc_layers, 
+                  hidden_size=config.fc_hidden_size, 
+                  dropout_rate=config.fc_dropout_rate,
+                  is_training=is_training)
 
       with tf.variable_scope('cls/predictions'):
-        self.logits = tf.layers.dense(self.conformer_block[-1], config.vocab_size, 
+        tf.logging.info("*** fc_output ***")
+        tf.logging.info(self.fc_output)
+        self.logits = tf.layers.dense(self.fc_output, 
+                                config.vocab_size, 
                                 kernel_initializer=initializer)
 
+  def get_unmasked_linear_proj(self):
+    with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
+      with tf.variable_scope('linear_proj'):
+        linear_proj = tf.layers.dense(
+                      self.unmasked_conv_subsampling, 
+                      units=self.config.ffm_hidden_size
+                    )
+        return linear_proj
+
+  def get_linear_proj_encoder(self, 
+                            linear_proj, 
+                            input_length,
+                            is_training,
+                            time_feature_mask):
+    conv_subsampling_shape = get_shape_list(linear_proj, expected_rank=[3])
+    assert len(conv_subsampling_shape) == 3
+    with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
+      if input_length is not None:
+        tf.logging.info("*** generate attention mask ***")
+        reduced_length = audio_utils.get_reduced_length(input_length, self.reduction_factor)
+        sequence_mask = tf.sequence_mask(reduced_length, conv_subsampling_shape[1])
+        tf.logging.info("*** sequence_mask ***")
+        tf.logging.info(sequence_mask)
+        if time_feature_mask is not None:
+          sequence_mask *= time_feature_mask
+        attention_mask = transformer_relative_position.create_attention_mask_from_input_mask(
+                                sequence_mask,
+                                sequence_mask)
+      else:
+        attention_mask = None
+
+      with tf.variable_scope('encoder'):
+        tf.logging.info("*** mha encoder ***")
+        mha_attention_head_size = self.config.mha_hidden_size // self.config.mha_num_attention_heads
+        tf.logging.info("*** mha_attention_head_size ***")
+        tf.logging.info(mha_attention_head_size)
+
+        pre_output = linear_proj
+
+        conformer_block = conformer(pre_output,
+            ffm_hidden_size=self.config.ffm_hidden_size,
+            ffm_dropout_rate=self.config.ffm_dropout,
+            ffm_fc_factor=self.config.ffm_fc_factor,
+            ffm_expansion_factor=self.config.ffm_expansion_factor,
+            mha_relative_position_embeddings=self.relative_position_embeddings,
+            mha_num_attention_heads=self.config.mha_num_attention_heads,
+            mha_attention_head_size=mha_attention_head_size,
+            mha_attention_probs_dropout_prob=self.config.mha_attention_probs_dropout_prob,
+            mha_hidden_dropout_prob=self.config.mha_hidden_dropout_prob,
+            mha_initializer_range=self.config.mha_initializer_range,
+            mha_use_relative_position=self.config.mha_use_relative_position,
+            mha_num_hidden_layers=self.config.mha_num_hidden_layers,
+            mha_attention_mask=self.attention_mask,
+            conv_strides=self.config.cnn_strides,
+            conv_depth_multiplier=self.config.cnn_depth_multiplier,
+            conv_dropout_prob=self.config.cnn_dropout_prob,
+            relative_position_type=self.config.mha_relative_position_type,
+            is_training=is_training,
+            is_global_bn=is_global_bn)
+      with tf.variable_scope('fc_module'):
+        fc_output = fc_block(conformer_block[-1],
+                  fc_layers=config.fc_layers, 
+                  hidden_size=config.fc_hidden_size, 
+                  dropout_rate=config.fc_dropout_rate,
+                  is_training=is_training)
+
+      return conformer_block[-1], fc_output
+
   def get_conv_downsampling_output(self):
-    return self.conv_subsampling
+    return self.unmasked_conv_subsampling
 
   def get_sequence_output(self):
-    return self.conformer_block
+    return self.conformer_block[-1]
 
   def get_conv_reduction_factor(self):
     return self.reduction_factor
 
   def get_logits(self):
     return self.logits
+
+  def get_fc_output(self):
+    return self.fc_output
+
+  def get_code_book(self, is_pretraining):
+    if is_pretraining:
+      return self.code_book
+    else:
+      return None
+
+  def get_code_discrete(self, is_pretraining):
+    if is_pretraining:
+      return self.code_discrete
+    else:
+      return None
+
+  def get_code_dense(self, is_pretraining):
+    if is_pretraining:
+      return self.code_dense
+    else:
+      return None
+
+  def get_code_loss(self, is_pretraining):
+    if is_pretraining:
+      return self.code_loss_dict
+    else:
+      return None
 
 def conformer(inputs,
             ffm_hidden_size,
@@ -192,16 +453,18 @@ def conformer(inputs,
             mha_num_attention_heads,
             mha_attention_head_size,
             mha_attention_probs_dropout_prob=0.1,
+            mha_hidden_dropout_prob=0.1,
             mha_initializer_range=0.02,
             mha_use_relative_position=True,
             mha_num_hidden_layers=12,
-            conv_filters=256,
+            mha_attention_mask=None,
             conv_kernel_sizes=31,
             conv_strides=1,
             conv_dropout_prob=0.1,
-            cnn_depth_multiplier=1,
+            conv_depth_multiplier=1,
             relative_position_type="relative_normal",
-            is_training=False):
+            is_training=False,
+            is_global_bn=False):
 
   input_shape = get_shape_list(inputs, expected_rank=[3])
   batch_size = input_shape[0]
@@ -212,20 +475,24 @@ def conformer(inputs,
 
   for layer_idx in range(mha_num_hidden_layers):
     with tf.variable_scope("layer_%d" % layer_idx):
-      with tf.variable_scope("pre_input"):
+      with tf.variable_scope("residual_ffm_input"):
         outputs = residual_ffm_block(pre_output, 
                       hidden_size=ffm_hidden_size, 
                       dropout_rate=ffm_dropout_rate,
                       fc_factor=ffm_fc_factor,
                       expansion_factor=ffm_expansion_factor,
                       is_training=is_training)
+        outputs = layer_norm(outputs)
+
+        tf.logging.info("*** residual_ffm_input ***")
+        tf.logging.info(outputs)
 
       with tf.variable_scope("attention"):
         with tf.variable_scope("self"):
           [attention_head, attention_probs] = transformer_relative_position.attention_layer(
                     from_tensor=outputs,
                     to_tensor=outputs,
-                    attention_mask=None,
+                    attention_mask=mha_attention_mask,
                     num_attention_heads=mha_num_attention_heads,
                     size_per_head=mha_attention_head_size,
                     attention_probs_dropout_prob=mha_attention_probs_dropout_prob,
@@ -239,29 +506,66 @@ def conformer(inputs,
                     relative_position_type=relative_position_type,
                     relative_position_embeddings=mha_relative_position_embeddings)
         
+          tf.logging.info("*** attention_head ***")
+          tf.logging.info(attention_head)
+
+        attention_head = tf.nn.dropout(attention_head, keep_prob=1-mha_hidden_dropout_prob)
         attention_output = layer_norm(attention_head + outputs)
 
         with tf.variable_scope("conformer_conv"):
           conv_output = conformer_conv(attention_output, 
-                filters=conv_filters, 
                 kernel_size=conv_kernel_sizes, 
                 strides=conv_strides,
-                depth_multiplier=depth_multiplier,
-                dropout_rate=conv_dropout_prob)
+                depth_multiplier=conv_depth_multiplier,
+                dropout_rate=conv_dropout_prob,
+                is_training=is_training,
+                is_global_bn=is_global_bn)
 
-        conv_attention_output = layer_norm(conv_output + attention_output)
+          tf.logging.info("*** conformer_conv ***")
+          tf.logging.info(conv_output)
 
-        with tf.variable_scope("post_output"):
+          conv_attention_output = layer_norm(conv_output + attention_output)
+
+        with tf.variable_scope("residual_ffm_output"):
           outputs = residual_ffm_block(conv_attention_output, 
                       hidden_size=ffm_hidden_size, 
                       dropout_rate=ffm_dropout_rate,
                       fc_factor=ffm_fc_factor,
                       expansion_factor=ffm_expansion_factor,
                       is_training=is_training)
+
+          tf.logging.info("*** residual_ffm_output ***")
+          tf.logging.info(outputs)
+
+          outputs = layer_norm(outputs)
         conformer_block.append(outputs)
         pre_output = outputs
 
   return conformer_block
+
+def fc_layer(inputs, hidden_size, 
+            dropout_rate, 
+            is_training=False):
+  fc_intermediate_output = tf.layers.dense(inputs, 
+                      units=hidden_size)
+
+  ffc_output = tf.nn.relu6(fc_intermediate_output)
+  ffc_output = tf.nn.dropout(ffc_output, keep_prob=1-dropout_rate)
+  return ffc_output
+
+def fc_block(inputs, 
+            fc_layers, 
+            hidden_size, 
+            dropout_rate,
+            is_training=False):
+  pre_output = inputs
+  for layer_idx in range(fc_layers):
+    with tf.variable_scope("layer_%d" % layer_idx):
+      pre_output = fc_layer(pre_output, 
+              hidden_size=hidden_size,
+              dropout_rate=dropout_rate,
+              is_training=is_training)
+  return pre_output
 
 def glu(inputs, axis=-1):
   a, b = tf.split(inputs, 2, axis=-1)
@@ -269,20 +573,23 @@ def glu(inputs, axis=-1):
   return tf.multiply(a, b)
 
 def conformer_conv(inputs, 
-            filters, 
             kernel_size, 
             strides=1,
             depth_multiplier=1,
-            dropout_rate=0.1):
+            dropout_rate=0.1,
+            is_training=False,
+            is_global_bn=False):
+
   # [batch, seq_len, dims]
   input_shape = get_shape_list(inputs, expected_rank=[3])
+  input_dim = input_shape[-1]
   # [batch, seq_len, 1, dims]
-  outputs = tf.epxand_dims(inputs, 2)
+  outputs = tf.expand_dims(inputs, 2)
 
   # [batch, seq_len, 1, filters*2]
   outputs = tf.layers.conv2d(
                   inputs=outputs, 
-                  filters=filters*2, 
+                  filters=input_dim*2, 
                   kernel_size=1, 
                   strides=1,
                   padding="valid", 
@@ -294,7 +601,7 @@ def conformer_conv(inputs,
   outputs = glu(outputs, axis=-1)
 
   depthwise_filter = tf.get_variable("depthwise_filter",
-                    (kernel_size, 1, filters, depth_multiplier),
+                    (kernel_size, 1, input_dim, depth_multiplier),
                     dtype=tf.float32,
                     initializer=tf.glorot_normal_initializer())
 
@@ -303,13 +610,14 @@ def conformer_conv(inputs,
     "SAME"
   )
 
-  outputs = batch_norm(outputs, is_training=is_training)
+  outputs = batch_norm(outputs, is_training=is_training,
+                      is_global_bn=is_global_bn)
   outputs = gelu(outputs)
 
   # [batch, seq_len, 1, dims]
   outputs = tf.layers.conv2d(
                   inputs=outputs, 
-                  filters=input_shape[-1], 
+                  filters=input_dim, 
                   kernel_size=1, 
                   strides=1,
                   padding="valid", 
@@ -317,7 +625,7 @@ def conformer_conv(inputs,
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
 
-  # [batch, seq_len, dims]
+  # [batch, seq_len, 1, dims]
   outputs = tf.squeeze(outputs, axis=2)
   outputs = tf.nn.dropout(outputs, keep_prob=1-dropout_rate)
   return outputs
@@ -328,11 +636,8 @@ def residual_ffm_block(inputs, hidden_size,
                   expansion_factor,
                   is_training=False):
 
-  if is_training:
-    dropout_rate = 0.0
-
   input_shape = get_shape_list(inputs, expected_rank=[3])
-  outputs = tf.layers.dense(outputs, 
+  outputs = tf.layers.dense(inputs, 
                     units=expansion_factor*hidden_size
           )
   outputs = gelu(outputs)
@@ -341,28 +646,33 @@ def residual_ffm_block(inputs, hidden_size,
                     units=input_shape[-1])
   outputs = tf.nn.dropout(outputs, keep_prob=1-dropout_rate)
   outputs = inputs + fc_factor * outputs
-  outputs = layer_norm(inputs)
   return outputs
 
+from model.global_bn_utils import global_batch_norm
 def batch_norm(inputs, is_training, 
               batch_norm_decay=0.997, 
-              batch_norm_eps=1e-5):
-  return tf.layers.batch_normalization(
-          inputs=inputs, 
-          momentum=batch_norm_decay, 
-          epsilon=batch_norm_eps,
-          fused=True, 
-          training=is_training)
+              batch_norm_eps=1e-5,
+              is_global_bn=False):
+  return global_batch_norm.batch_norm(inputs=inputs, 
+            batch_norm_decay=batch_norm_decay,
+            batch_norm_eps=batch_norm_eps,
+            is_global_bn=is_global_bn)
+  # return tf.layers.batch_normalization(
+  #         inputs=inputs, 
+  #         momentum=batch_norm_decay, 
+  #         epsilon=batch_norm_eps,
+  #         fused=True, 
+  #         training=is_training)
 
 def conv2d_bn_layer(inputs, 
                   filters, 
                   kernel_size, 
                   strides,
-                  layer_id,
                   dropout_rate,
-                  is_batch_norm,
+                  is_batch_norm=False,
                   is_training=False,
-                  is_padding=True
+                  is_padding=True,
+                  is_global_bn=False
                   ):
 
   if is_padding:
@@ -381,7 +691,8 @@ def conv2d_bn_layer(inputs,
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
   if is_batch_norm:
-    inputs = batch_norm(inputs, is_training)
+    inputs = batch_norm(inputs, is_training, 
+                        is_global_bn=is_global_bn)
   inputs = tf.nn.relu6(inputs)
   inputs = tf.nn.dropout(inputs, keep_prob=1-dropout_rate)
   return inputs
@@ -393,7 +704,8 @@ def conv2d_block(inputs,
               dropout_rate=0.1,
               is_batch_norm=True,
               is_training=False,
-              is_padding=True):
+              is_padding=True,
+              is_global_bn=False):
 
   assert len(kernel_sizes) == len(strides) == len(filters)
   pre_output = inputs
@@ -401,12 +713,13 @@ def conv2d_block(inputs,
     with tf.variable_scope("layer_%d" % layer_idx):
       pre_output = conv2d_bn_layer(pre_output, 
                     filters=filters[layer_idx], 
-                    kernel_size=kernel_size[layer_idx], 
+                    kernel_size=kernel_sizes[layer_idx], 
                     strides=strides[layer_idx], 
                     dropout_rate=dropout_rate,
                     is_batch_norm=is_batch_norm,
                     is_training=is_training,
-                    is_padding=is_padding
+                    is_padding=is_padding,
+                    is_global_bn=is_global_bn
                     )
 
   reduction_factor = 1
@@ -492,6 +805,32 @@ def layer_norm(input_tensor, name=None):
   """Run layer normalization on the last dimension of the tensor."""
   return tf.contrib.layers.layer_norm(
       inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+
+def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
+  """Compute the union of the current variables and checkpoint variables."""
+  assignment_map = {}
+  initialized_variable_names = {}
+
+  name_to_variable = collections.OrderedDict()
+  for var in tvars:
+    name = var.name
+    m = re.match("^(.*):\\d+$", name)
+    if m is not None:
+      name = m.group(1)
+    name_to_variable[name] = var
+
+  init_vars = tf.train.list_variables(init_checkpoint)
+
+  assignment_map = collections.OrderedDict()
+  for x in init_vars:
+    (name, var) = (x[0], x[1])
+    if name not in name_to_variable:
+      continue
+    assignment_map[name] = name
+    initialized_variable_names[name] = 1
+    initialized_variable_names[name + ":0"] = 1
+
+  return (assignment_map, initialized_variable_names)
 
 def get_shape_list(tensor, expected_rank=None, name=None):
   """Returns a list of the shape of tensor, preferring static dimensions.

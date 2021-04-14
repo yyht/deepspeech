@@ -140,7 +140,12 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     "distributed_mode", "all_reduce",
     "Initial checkpoint (usually from a pre-trained BERT model).")
+flags.DEFINE_bool("if_focal_ctc", False, "Whether to use TPU or GPU/CPU.")
 
+flags.DEFINE_float("alpha", 0.5,
+                     "How many steps to make in each estimator call.")
+flags.DEFINE_float("gamma", 2.0,
+                     "How many steps to make in each estimator call.")
 
 # with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, 'evn.txt'), "w") as fwobj:
 #   tf_src_path = "/".join(tf.sysconfig.get_include().split("/")[:-2]+['tensorflow'])
@@ -204,6 +209,10 @@ def create_model(model_config,
                   label_length, 
                   time_major=model_config.time_major
                   )
+      if FLAGS.if_focal_ctc:
+        tf.logging.info("*** apply sparse focal ctc loss ***")
+        p = tf.exp(-per_example_loss)
+        per_example_loss *= FLAGS.alpha*tf.pow(1-p, FLAGS.gamma)
       loss = tf.reduce_mean(per_example_loss)
     elif ctc_loss_type == 'dense_ctc':
       tf.logging.info("*** apply dense ctc loss ***")
@@ -216,6 +225,20 @@ def create_model(model_config,
                     indices=unique_indices,
                     time_major=model_config.time_major)
       loss = tf.reduce_mean(per_example_loss)
+    # elif ctc_loss_type == 'warp_ctc':
+    #   from loss.warp_ctc_loss import warpctc_loss
+    #   tf.logging.info("*** apply warp ctc loss ***")
+    #   flatten_label = tf.reshape(input_transcripts, [-1])
+    #   tf.logging.info(flatten_label)
+    #   mask = tf.greater(flatten_label, 0)
+    #   non_zero_label = tf.boolean_mask(flatten_label, mask)
+    #   per_example_loss = warpctc_loss(
+    #                 non_zero_label, 
+    #                 logits, 
+    #                 reduced_length, 
+    #                 label_length, 
+    #                 time_major=False)
+    #   loss = tf.reduce_mean(per_example_loss)
   else:
     per_example_loss = tf.zeros(logits_shape[0])
     loss = tf.reduce_mean(per_example_loss)
@@ -252,10 +275,10 @@ def model_fn_builder(model_config,
     
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-    (clean_loss, 
-    clean_per_example_loss, 
-    clean_logits,
-    clean_audio_embedding) = create_model(
+    (clean_aug_loss, 
+    clean_aug_per_example_loss, 
+    clean_aug_logits,
+    clean_aug_audio_embedding) = create_model(
         model_config=model_config,
         ipnut_features=clean_aug_feature,
         input_transcripts=transcript_id,
@@ -266,10 +289,24 @@ def model_fn_builder(model_config,
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
-    (noise_loss, 
-    noise_per_example_loss, 
-    noise_logits,
-    noise_audio_embedding) = create_model(
+    # (clean_loss, 
+    # clean_per_example_loss, 
+    # clean_logits,
+    # clean_audio_embedding) = create_model(
+    #     model_config=model_config,
+    #     ipnut_features=clean_feature,
+    #     input_transcripts=transcript_id,
+    #     is_training=is_training,
+    #     ctc_loss_type=ctc_loss_type,
+    #     unique_indices=(features['unique_labels'], 
+    #                     features['unique_indices']),
+    #     if_calculate_loss=True,
+    #     input_length=feature_seq_length)
+
+    (noise_aug_loss, 
+    noise_aug_per_example_loss, 
+    noise_aug_logits,
+    noise_aug_audio_embedding) = create_model(
         model_config=model_config,
         ipnut_features=noise_aug_feature,
         input_transcripts=transcript_id,
@@ -280,7 +317,26 @@ def model_fn_builder(model_config,
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
-    total_loss = clean_loss + noise_loss
+    # (noise_loss, 
+    # noise_per_example_loss, 
+    # noise_logits,
+    # noise_audio_embedding) = create_model(
+    #     model_config=model_config,
+    #     ipnut_features=noise_feature,
+    #     input_transcripts=transcript_id,
+    #     is_training=is_training,
+    #     ctc_loss_type=ctc_loss_type,
+    #     unique_indices=(features['unique_labels'], 
+    #                     features['unique_indices']),
+    #     if_calculate_loss=True,
+    #     input_length=feature_seq_length)
+
+    # total_loss = (clean_loss + noise_loss + clean_aug_loss + noise_aug_loss)
+    # total_loss = total_loss / 4.0
+
+    total_loss = (clean_aug_loss + noise_aug_loss)
+    # total_loss = (noise_loss + clean_loss)
+    total_loss = total_loss / 2.0
 
     tvars = tf.trainable_variables()
     initialized_variable_names = {}
@@ -315,8 +371,10 @@ def model_fn_builder(model_config,
             task_layers=[])
     
       hook_dict = {}
-      hook_dict['noise_loss'] = noise_loss
-      hook_dict['clean_loss'] = clean_loss
+      # hook_dict['noise_loss'] = noise_loss
+      # hook_dict['clean_loss'] = clean_loss
+      hook_dict['noise_aug_loss'] = noise_aug_loss
+      hook_dict['clean_aug_loss'] = clean_aug_loss
       hook_dict['learning_rate'] = output_learning_rate
       logging_hook = tf.train.LoggingTensorHook(
         hook_dict, every_n_iter=100)
@@ -392,6 +450,7 @@ def input_fn_builder(input_file,
     output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
     output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
     feature_shape = shape_list(noise_feature)
+    # [T, V, 1]
     output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
     [unique_labels, 
     unique_indices] = ctc_ops.ctc_unique_labels(
@@ -399,7 +458,6 @@ def input_fn_builder(input_file,
             )
     output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
     output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
-
     return output_examples
 
   """The actual input function."""
@@ -432,7 +490,7 @@ def input_fn_builder(input_file,
               "dialect_id":tf.TensorShape([]),
               "unique_labels":tf.TensorShape([transcript_seq_length]),
               "unique_indices":tf.TensorShape([transcript_seq_length]),
-              "feature_seq_length":tf.TensorShape([]),
+              "feature_seq_length":tf.TensorShape([])
             },
             padding_values={
               "clean_feature":0.0,
@@ -484,9 +542,6 @@ def main(_):
 
   config_name = FLAGS.bert_config_file.split("/")[-1]
   import os
-  with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, config_name), "w") as fwobj:
-    fwobj.write(model_config.to_json_string()+"\n")
-
   output_dir = os.path.join(FLAGS.buckets, FLAGS.output_dir)
 
   tf.gfile.MakeDirs(output_dir)
@@ -510,7 +565,8 @@ def main(_):
                   all_dense=True,
                   iter_size=FLAGS.num_accumulated_batches)
       print("===distribution===", distribution)
-      worker_count = None
+      worker_count = 1
+      worker_gpus = FLAGS.num_gpus
       task_index = 0
     elif 'pai' in tf.__version__.lower() and FLAGS.distributed_mode == 'collective_reduce':
       print(tf.__version__, "==tf version collective reduce==")
@@ -518,12 +574,18 @@ def main(_):
       dump_into_tf_config(cluster, task_type, task_index)
       distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
                   num_gpus_per_worker=FLAGS.num_gpus,
-                  cross_tower_ops_type='horovod',
+                  cross_tower_ops_type='horovod', # default, horovod
                   all_dense=True)
 
       worker_hosts = FLAGS.worker_hosts.split(",")
-      worker_count = len(worker_hosts)*FLAGS.num_gpus
-      print(worker_count, "==worker_count==")
+      worker_count = len(worker_hosts)
+      worker_gpus = worker_count*FLAGS.num_gpus
+      print(worker_count*FLAGS.num_gpus, "==worker_count==")
+
+  if task_index == 0:
+    import os
+    with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, config_name), "w") as fwobj:
+      fwobj.write(model_config.to_json_string()+"\n")
 
   global_batch_size = FLAGS.train_batch_size * FLAGS.num_gpus * FLAGS.num_accumulated_batches
 
@@ -555,7 +617,7 @@ def main(_):
 
   train_examples = FLAGS.train_examples
   num_train_steps = int(
-        FLAGS.train_examples / global_batch_size * FLAGS.num_train_epochs)
+        FLAGS.train_examples / (global_batch_size*worker_gpus) * FLAGS.num_train_epochs)
   num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
 
   model_fn = model_fn_builder(
@@ -566,9 +628,10 @@ def main(_):
       num_train_steps=num_train_steps,
       num_warmup_steps=num_warmup_steps)
 
-  if FLAGS.distributed_mode == "collective_reduce":
-    output_dir = output_dir if task_index == 0 else None
+  # if FLAGS.distributed_mode == "collective_reduce":
+  #   output_dir = output_dir if task_index == 0 else None
 
+  output_dir = output_dir
   estimator = tf.estimator.Estimator(
                 model_fn=model_fn,
                 model_dir=output_dir,

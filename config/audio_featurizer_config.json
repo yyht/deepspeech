@@ -4,8 +4,9 @@
     "stride_ms": 10,
     "num_feature_bins": 80,
     "feature_type": "log_mel_spectrogram",
-    "preemphasis": null,
+    "preemphasis": 0.97,
     "normalize_signal": true,
-    "normalize_feature": false,
-    "center": true
+    "normalize_feature": true,
+    "center": true,
+    "normalize_per_feature": false
 }

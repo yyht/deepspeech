@@ -58,6 +58,12 @@ class SpeechFeaturizer(object):
   def update_length(self, length: int):
     self.max_length = max(self.max_length, length)
 
+  def get_reduced_factor(self, reduced_factor):
+    self.reduced_factor = reduced_factor
+
+  def get_reduced_length(self):
+    self.reduced_length = np.ceil(length, self.reduced_factor)
+
   def reset_length(self):
     self.max_length = 0
 

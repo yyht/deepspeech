@@ -54,6 +54,12 @@ class DeepSpeechConfig(object):
     self.is_cnn_padding = is_cnn_padding
     self.time_major = time_major
 
+    self.reduction_factor = 1
+    for s in self.cnn_strides: 
+      self.reduction_factor *= s[0]
+    tf.logging.info("*** reduction_factor ***")
+    tf.logging.info(self.reduction_factor)
+
   @classmethod
   def from_dict(cls, json_object):
     """Constructs a `BertConfig` from a Python dictionary of parameters."""
@@ -99,6 +105,7 @@ class DeepSpeech(object):
       config.fc_dropout_rate = 0.0
 
     sequences_shape = get_shape_list(sequences, expected_rank=[3,4])
+    max_length = sequences_shape[1]
     if len(sequences_shape) == 4:
       sequences = sequences
     else:
@@ -139,6 +146,8 @@ class DeepSpeech(object):
       if input_length is not None:
         tf.logging.info("*** apply rnn reduced_length ***")
         reduced_length = audio_utils.get_reduced_length(input_length, self.reduction_factor)
+        # reduced_total_length = audio_utils.get_reduced_length(input_length, self.reduction_factor)
+        # sequences_mask = tf.sequence_mask(reduced_length, )
       else:
         tf.logging.info("*** apply rnn padded_length ***")
         reduced_length = None
@@ -277,12 +286,12 @@ def rnn_layer(inputs, rnn_cell,
   if is_bidirectional:
     outputs, _ = tf.nn.bidirectional_dynamic_rnn(
     cell_fw=fw_cell, cell_bw=bw_cell, inputs=inputs, dtype=tf.float32,
-    swap_memory=True,
+    swap_memory=False,
     sequence_length=sequence_length)
     rnn_outputs = tf.concat(outputs, -1)
   else:
     rnn_outputs = tf.nn.dynamic_rnn(
-    fw_cell, inputs, dtype=tf.float32, swap_memory=True,
+    fw_cell, inputs, dtype=tf.float32, swap_memory=False,
     sequence_length=sequence_length)
 
   if is_batch_norm:

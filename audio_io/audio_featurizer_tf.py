@@ -2,6 +2,7 @@
 import tensorflow as tf
 from audio_io import audio_feature_tf
 import math
+import numpy as np
 
 class SpeechFeaturizer(object):
   def __init__(self, speech_config):
@@ -57,6 +58,20 @@ class SpeechFeaturizer(object):
 
   def update_length(self, length):
     self.max_length = max(self.max_length, length)
+    print("==max_length==", self.max_length)
+
+  def update_reduced_factor(self, reduced_factor):
+    self.reduced_factor = reduced_factor
+    print("==reduced_factor==", reduced_factor)
+
+  def get_reduced_factor(self):
+    print("==reduced_factor==", self.reduced_factor)
+    return self.reduced_factor
+
+  def get_reduced_length(self):
+    self.reduced_length = int(math.ceil(self.max_length/self.reduced_factor))
+    print("==reduced_length==", self.reduced_length)
+    return self.reduced_length
 
   def reset_length(self):
     self.max_length = 0

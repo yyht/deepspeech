@@ -2,6 +2,11 @@
 import tensorflow as tf
 import numpy as np
 
+"""
+https://stackoverflow.com/questions/49147961/how-to-use-exponential-moving-average-in-tensorflow
+https://www.coder.work/article/1251863
+"""
+
 class EMA(object):
   def __init__(self, average_decay, start_step):
     with tf.variable_scope('ema', reuse=tf.AUTO_REUSE):
@@ -41,5 +46,37 @@ class EMA(object):
       return self._apply_ema(var_lst)
     else:
       return self._restore_vars(var_lst)
+
+  def ema_getter(self, getter, name, *args, **kwargs):
+    var = getter(name, *args, **kwargs)
+    ema_var = self.ema.average(var)
+    return ema_var if ema_var else var
+
+class RestoreParametersAverageValues(tf.train.SessionRunHook):
+  """
+  Replace parameters with their moving averages.
+  This operation should be executed only once, and before any inference.
+  """
+  def __init__(self, ema, ema_variables):
+    """
+    :param ema:         tf.train.ExponentialMovingAverage
+    """
+    super(RestoreParametersAverageValues, self).__init__()
+    self._ema = ema
+    self._restore_ops = None
+    self.ema_variables = ema_variables
+
+  def begin(self):
+    """ Create restoring operations before the graph been finalized. """
+    if not self.ema_variables:
+      ema_variables = tf.moving_average_variables()
+    self._restore_ops = [tf.assign(x, self._ema.average(x)) for x in ema_variables]
+    print("==get restore ops==")
+
+  def after_create_session(self, session, coord):
+    """ Restore the parameters right after the session been created. """
+    print("==restore ema variables==")
+    session.run(self._restore_ops)
+
 
 

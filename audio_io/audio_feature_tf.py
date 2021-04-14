@@ -121,22 +121,6 @@ def compute_logfbank_feature(signal, nfft, frame_step, frame_length, center,
   mel_spectrogram = tf.tensordot(spectrogram, linear_to_weight_matrix, 1)
   return tf.log(mel_spectrogram + 1e-20)
 
-def preemphasis(signal, coeff=0.97):
-  """
-  TF Pre-emphasis
-  Args:
-      signal: tf.Tensor with shape [None]
-      coeff: Float that indicates the preemphasis coefficient
-
-  Returns:
-      pre-emphasized signal with shape [None]
-  """
-  if not coeff or coeff <= 0.0: return signal
-  s0 = tf.expand_dims(signal[0], axis=-1)
-  s1 = signal[1:] - coeff * signal[:-1]
-  return tf.concat([s0, s1], axis=-1)
-
-
 def normalize_signal(signal):
   """
   TF Normailize signal to [-1, 1] range
@@ -164,6 +148,21 @@ def preemphasis(signal, coeff=0.97):
   s1 = signal[1:] - coeff * signal[:-1]
   return tf.concat([s0, s1], axis=-1)
 
+from tensorflow.python.framework import ops
+from tensorflow.python.ops import gen_math_ops
+def reduce_variance(input_tensor, axis=None, keepdims=False, name=None):
+  name = name if name else "reduce_variance"
+  with ops.name_scope(name):
+    means = tf.reduce_mean(input_tensor, axis=axis, keepdims=True)
+    squared_deviations = gen_math_ops.square(input_tensor - means)
+    return tf.reduce_mean(squared_deviations, axis=axis, keepdims=keepdims)
+
+def reduce_std(input_tensor, axis=None, keepdims=False, name=None):
+  name = name if name else "reduce_std"
+  with ops.name_scope(name):
+    variance = reduce_variance(input_tensor, axis=axis, keepdims=keepdims)
+    return gen_math_ops.sqrt(variance)
+
 def normalize_audio_feature(audio_feature, per_feature=False):
   """
   TF Mean and variance features normalization
@@ -175,7 +174,7 @@ def normalize_audio_feature(audio_feature, per_feature=False):
   """
   axis = 0 if per_feature else None
   mean = tf.reduce_mean(audio_feature, axis=axis)
-  std_dev = tf.math.reduce_std(audio_feature, axis=axis) + 1e-9
+  std_dev = reduce_std(audio_feature, axis=axis) + 1e-9
   return (audio_feature - mean) / std_dev
 
 
