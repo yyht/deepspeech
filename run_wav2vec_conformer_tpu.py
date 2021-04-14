@@ -324,7 +324,7 @@ def model_fn_builder(model_config,
       else:
         host_call = None
 
-      print(host_call, "====host_call====")
+      print(host_call, "====host_call=====")
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
