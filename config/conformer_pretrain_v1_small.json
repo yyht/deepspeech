@@ -8,7 +8,7 @@
 	"proj_dropout": 0.1,
 	"ffm_expansion_factor": 4,
 	"ffm_dropout": 0.1,
-	"ffm_hidden_size": 512,
+	"ffm_hidden_size": 256,
 	"ffm_fc_factor": 0.5,
 
 	"mha_hidden_size": 256,
