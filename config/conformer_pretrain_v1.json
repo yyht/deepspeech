@@ -8,10 +8,10 @@
 	"proj_dropout": 0.1,
 	"ffm_expansion_factor": 4,
 	"ffm_dropout": 0.1,
-	"ffm_hidden_size": 768,
+	"ffm_hidden_size": 512,
 	"ffm_fc_factor": 0.5,
 
-	"mha_hidden_size": 768,
+	"mha_hidden_size": 512,
 	"mha_num_attention_heads": 8,
 	"mha_max_relative_position": 128,
 	"mha_num_buckets": 32,
@@ -32,11 +32,11 @@
 	"is_cnn_padding": true,
 
 	"fc_layers": 1,
-	"fc_hidden_size": 768,
+	"fc_hidden_size": 512,
 	"fc_dropout_rate": 0.1,
 
 	"bottleneck_size": 512,
-	"bottleneck_dims": 768,
+	"bottleneck_dims": 512,
 
 	"vqvae_beta": 0.25,
 	"vqvae_gamma": 0.1,
