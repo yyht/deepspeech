@@ -622,7 +622,7 @@ def input_fn_builder(input_file,
               drop_remainder=drop_remainder
           )
 
-    # d = d.prefetch(batch_size*10)
+    d = d.prefetch(batch_size*10)
     # d = d.apply(tf.data.experimental.ignore_errors())
     return d
   return input_fn
