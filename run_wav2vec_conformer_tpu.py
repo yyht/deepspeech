@@ -266,6 +266,7 @@ def model_fn_builder(model_config,
     #         masked_weights,
     #         margin=FLAGS.circle_margin,
     #         gamma=FLAGS.circle_gamma)
+    #
 
     clean_loss = tf.reduce_mean(clean_sequence_output)
 
