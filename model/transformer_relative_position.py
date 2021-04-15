@@ -472,7 +472,7 @@ def attention_layer(from_tensor,
       # relative_position_embeddings: [F, T, N]--> [N, F, T]
       relative_position_embeddings = tf.transpose(relative_position_embeddings, [2,0,1])
       # relative_position_embeddings: [N, F, T] ---> [1, N, F, T]
-      tf.logging.info("**** apply t5-relative position bias on attention_scores ***")
+      tf.logging.info("***** apply t5-relative position bias on attention_scores ***")
       attention_scores += tf.expand_dims(relative_position_embeddings, axis=0)
     
   attention_scores = tf.multiply(attention_scores,
