@@ -24,7 +24,7 @@
 	"mha_hidden_dropout_prob": 0.1,
 	"mha_use_relative_position": true,
 
-	"cnn_kernel_sizes": 32,
+	"cnn_kernel_sizes": 31,
 	"cnn_strides": 1,
 	"cnn_depth_multiplier": 1,
 	"cnn_dropout_prob": 0.1,

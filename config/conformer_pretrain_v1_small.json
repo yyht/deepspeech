@@ -12,7 +12,7 @@
 	"ffm_fc_factor": 0.5,
 
 	"mha_hidden_size": 256,
-	"mha_num_attention_heads": 8,
+	"mha_num_attention_heads": 4,
 	"mha_max_relative_position": 128,
 	"mha_num_buckets": 32,
 	"mha_bidirectional": true,
