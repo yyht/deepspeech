@@ -677,6 +677,22 @@ def main(_):
   for input_file in input_files:
     tf.logging.info("  %s" % input_file)
 
+  audio_featurizer_config_path = os.path.join(FLAGS.buckets, FLAGS.audio_featurizer_config_path)
+  with tf.gfile.Open(audio_featurizer_config_path, "r") as frobj:
+    audio_featurizer_config = json.load(frobj)
+
+  audio_featurizer = audio_featurizer_tf.TFSpeechFeaturizer(audio_featurizer_config)
+  max_feature_length = audio_featurizer.get_length_from_duration(FLAGS.max_duration)
+  audio_featurizer.update_length(max_feature_length)
+
+  audio_featurizer.update_reduced_factor(model_config.reduction_factor)
+
+  featurizer_aug_config_path = os.path.join(FLAGS.buckets, FLAGS.featurizer_aug_config_path)
+  with tf.gfile.Open(featurizer_aug_config_path, "r") as frobj:
+    featurizer_aug_config = json.load(frobj)
+  feature_augmenter = augment_tf.Augmentation(featurizer_aug_config, 
+                                            use_tf=True)
+
   model_fn = model_fn_builder(
       model_config=model_config,
       init_checkpoint=init_checkpoint,
@@ -693,22 +709,6 @@ def main(_):
       config=run_config,
       train_batch_size=FLAGS.train_batch_size,
       eval_batch_size=FLAGS.eval_batch_size)
-
-  audio_featurizer_config_path = os.path.join(FLAGS.buckets, FLAGS.audio_featurizer_config_path)
-  with tf.gfile.Open(audio_featurizer_config_path, "r") as frobj:
-    audio_featurizer_config = json.load(frobj)
-
-  audio_featurizer = audio_featurizer_tf.TFSpeechFeaturizer(audio_featurizer_config)
-  max_feature_length = audio_featurizer.get_length_from_duration(FLAGS.max_duration)
-  audio_featurizer.update_length(max_feature_length)
-
-  audio_featurizer.update_reduced_factor(model_config.reduction_factor)
-
-  featurizer_aug_config_path = os.path.join(FLAGS.buckets, FLAGS.featurizer_aug_config_path)
-  with tf.gfile.Open(featurizer_aug_config_path, "r") as frobj:
-    featurizer_aug_config = json.load(frobj)
-  feature_augmenter = augment_tf.Augmentation(featurizer_aug_config, 
-                                            use_tf=True)
 
   train_input_fn = input_fn_builder(
         input_file=input_files,
