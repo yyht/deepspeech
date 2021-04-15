@@ -529,7 +529,7 @@ def input_fn_builder(input_file,
       output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
       output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
       output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
-      feature_shape = shape_list(noise_feature)
+      feature_shape = shape_list(clean_feature)
       # [T, V, 1]
       output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
       [unique_labels, 
