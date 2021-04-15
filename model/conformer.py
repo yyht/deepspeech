@@ -514,7 +514,7 @@ def conformer(inputs,
 
       with tf.variable_scope("attention"):
         with tf.variable_scope("self"):
-          [attention_head, attention_probs] = transformer_relative_position.attention_layer(
+          [attention_head, attention_scores] = transformer_relative_position.attention_layer(
                     from_tensor=outputs,
                     to_tensor=outputs,
                     attention_mask=mha_attention_mask,
