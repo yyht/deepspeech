@@ -451,6 +451,9 @@ def get_masked_lm_output(
   tf.logging.info("*** circle per_example_loss **")
   tf.logging.info(per_example_loss)
 
+  tf.logging.info("*** circle label_weights **")
+  tf.logging.info(label_weights)
+
   loss = tf.reduce_sum(per_example_loss*label_weights) / (1e-10+tf.reduce_sum(label_weights))
 
   return (loss, per_example_loss)
