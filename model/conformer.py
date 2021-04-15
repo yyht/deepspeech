@@ -303,7 +303,7 @@ class Conformer(object):
                       bidirectional=config.mha_bidirectional,
                       relative_position_type=config.mha_relative_position_type,
                       relative_position_embedding_type=config.mha_relative_position_embedding_type)
-        tf.logging.info("*** relative_position_embeddings ***")
+        tf.logging.info("**** relative_position_embeddings ***")
         tf.logging.info(self.relative_position_embeddings)
         pre_output = self.linear_proj
 
