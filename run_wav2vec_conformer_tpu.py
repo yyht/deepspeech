@@ -258,14 +258,16 @@ def model_fn_builder(model_config,
     tf.logging.info("** clean_code_dense **")
     tf.logging.info(clean_code_dense)
 
-    (clean_loss, 
-    clean_per_example_loss) = get_masked_lm_output(
-            clean_sequence_output, 
-            masked_positions,
-            clean_code_dense,
-            masked_weights,
-            margin=FLAGS.circle_margin,
-            gamma=FLAGS.circle_gamma)
+    # (clean_loss, 
+    # clean_per_example_loss) = get_masked_lm_output(
+    #         clean_sequence_output, 
+    #         masked_positions,
+    #         clean_code_dense,
+    #         masked_weights,
+    #         margin=FLAGS.circle_margin,
+    #         gamma=FLAGS.circle_gamma)
+
+    clean_loss = tf.reduce_mean(clean_sequence_output)
 
     tf.logging.info("** clean_loss **")
     tf.logging.info(clean_loss)
