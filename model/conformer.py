@@ -512,7 +512,7 @@ def conformer(inputs,
         tf.logging.info("*** residual_ffm_input ***")
         tf.logging.info(outputs)
 
-      # with tf.variable_scope("attention"):
+      with tf.variable_scope("attention"):
       #   with tf.variable_scope("self"):
       #     [attention_head, attention_probs] = transformer_relative_position.attention_layer(
       #               from_tensor=outputs,
@@ -537,32 +537,32 @@ def conformer(inputs,
       #   attention_head = tf.nn.dropout(attention_head, keep_prob=1-mha_hidden_dropout_prob)
       #   attention_output = layer_norm(attention_head + outputs)
 
-      #   with tf.variable_scope("conformer_conv"):
-      #     conv_output = conformer_conv(attention_output, 
-      #           kernel_size=conv_kernel_sizes, 
-      #           strides=conv_strides,
-      #           depth_multiplier=conv_depth_multiplier,
-      #           dropout_rate=conv_dropout_prob,
-      #           is_training=is_training,
-      #           is_global_bn=is_global_bn)
+        with tf.variable_scope("conformer_conv"):
+          conv_output = conformer_conv(attention_output, 
+                kernel_size=conv_kernel_sizes, 
+                strides=conv_strides,
+                depth_multiplier=conv_depth_multiplier,
+                dropout_rate=conv_dropout_prob,
+                is_training=is_training,
+                is_global_bn=is_global_bn)
 
-      #     tf.logging.info("*** conformer_conv ***")
-      #     tf.logging.info(conv_output)
+          tf.logging.info("*** conformer_conv ***")
+          tf.logging.info(conv_output)
 
-      #     conv_attention_output = layer_norm(conv_output + attention_output)
+          conv_attention_output = layer_norm(conv_output + attention_output)
 
-      #   with tf.variable_scope("residual_ffm_output"):
-      #     outputs = residual_ffm_block(conv_attention_output, 
-      #                 hidden_size=ffm_hidden_size, 
-      #                 dropout_rate=ffm_dropout_rate,
-      #                 fc_factor=ffm_fc_factor,
-      #                 expansion_factor=ffm_expansion_factor,
-      #                 is_training=is_training)
+        with tf.variable_scope("residual_ffm_output"):
+          outputs = residual_ffm_block(conv_attention_output, 
+                      hidden_size=ffm_hidden_size, 
+                      dropout_rate=ffm_dropout_rate,
+                      fc_factor=ffm_fc_factor,
+                      expansion_factor=ffm_expansion_factor,
+                      is_training=is_training)
 
-      #     tf.logging.info("*** residual_ffm_output ***")
-      #     tf.logging.info(outputs)
+          tf.logging.info("*** residual_ffm_output ***")
+          tf.logging.info(outputs)
 
-      #     outputs = layer_norm(outputs)
+          outputs = layer_norm(outputs)
         conformer_block.append(outputs)
         pre_output = outputs
 
@@ -611,6 +611,9 @@ def conformer_conv(inputs,
   # [batch, seq_len, 1, dims]
   outputs = tf.expand_dims(inputs, 2)
 
+  tf.logging.info("*** conformer conv outputs ***")
+  tf.logging.info(outputs)
+
   # [batch, seq_len, 1, filters*2]
   outputs = tf.layers.conv2d(
                   inputs=outputs, 
@@ -622,8 +625,14 @@ def conformer_conv(inputs,
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
 
+  tf.logging.info("*** after point-wise conv ***")
+  tf.logging.info(outputs)
+
   # [batch, seq_len, 1, filters]
   outputs = glu(outputs, axis=-1)
+
+  tf.logging.info("*** after gated unit ***")
+  tf.logging.info(outputs)
 
   depthwise_filter = tf.get_variable("depthwise_filter",
                     (kernel_size, 1, input_dim, depth_multiplier),
@@ -635,9 +644,19 @@ def conformer_conv(inputs,
     "SAME"
   )
 
+  tf.logging.info("*** after depthwise_conv2d ***")
+  tf.logging.info(outputs)
+
   outputs = batch_norm(outputs, is_training=is_training,
                       is_global_bn=is_global_bn)
+
+  tf.logging.info("*** after batch_norm ***")
+  tf.logging.info(outputs)
+
   outputs = gelu(outputs)
+
+  tf.logging.info("*** after gelu ***")
+  tf.logging.info(outputs)
 
   # [batch, seq_len, 1, dims]
   outputs = tf.layers.conv2d(
@@ -650,8 +669,15 @@ def conformer_conv(inputs,
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
 
+  tf.logging.info("*** after point-wise conv ***")
+  tf.logging.info(outputs)
+
   # [batch, seq_len, 1, dims]
   outputs = tf.squeeze(outputs, axis=2)
+
+  tf.logging.info("*** after squeeze ***")
+  tf.logging.info(outputs)
+
   outputs = tf.nn.dropout(outputs, keep_prob=1-dropout_rate)
   return outputs
 
