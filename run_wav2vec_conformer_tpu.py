@@ -417,6 +417,9 @@ def get_masked_lm_output(
   tf.logging.info("** similarity_matrix **")
   tf.logging.info(similarity_matrix)
 
+  # only consider columns since we only 
+  # calculate loss on columns
+  # rows are masked by label_weight
   pos_label_mask = tf.eye(masked_tensor_shape[0]) * label_mask
   neg_label_mask = (1.0 - pos_label_mask) * label_mask
 
