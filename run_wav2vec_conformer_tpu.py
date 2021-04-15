@@ -252,6 +252,12 @@ def model_fn_builder(model_config,
         input_length=feature_seq_length,
         time_feature_mask=time_feature_mask)
 
+    tf.logging.info("** clean_sequence_output **")
+    tf.logging.info(clean_sequence_output)
+
+    tf.logging.info("** clean_code_dense **")
+    tf.logging.info(clean_code_dense)
+
     (clean_loss, 
     clean_per_example_loss) = get_masked_lm_output(
             clean_sequence_output, 
@@ -260,6 +266,9 @@ def model_fn_builder(model_config,
             masked_weights,
             margin=FLAGS.circle_margin,
             gamma=FLAGS.circle_gamma)
+
+    tf.logging.info("** clean_loss **")
+    tf.logging.info(clean_loss)
 
     total_loss = (clean_loss)
     for key in clean_code_loss_dict:
