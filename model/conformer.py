@@ -271,6 +271,10 @@ class Conformer(object):
       if input_length is not None:
         tf.logging.info("*** generate attention mask ***")
         reduced_length = audio_utils.get_reduced_length(input_length, self.reduction_factor)
+        
+        tf.logging.info("*** reduced_length ***")
+        tf.logging.info(reduced_length)
+
         sequence_mask = tf.sequence_mask(reduced_length, conv_subsampling_shape[1])
         sequence_mask = tf.cast(sequence_mask, dtype=tf.float32)
         tf.logging.info("*** sequence_mask ***")
