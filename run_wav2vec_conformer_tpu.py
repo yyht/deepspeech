@@ -543,6 +543,13 @@ def input_fn_builder(input_file,
         print(reduced_length, audio_featurizer.get_reduced_length(), "====")
         inputs = tf.sequence_mask(reduced_length, audio_featurizer.get_reduced_length())
         inputs = tf.cast(inputs, dtype=tf.int32)
+
+        tf.logging.info("*** inputs ***")
+        tf.logging.info(inputs)
+
+        tf.logging.info("*** get_reduced_length ***")
+        tf.logging.info(audio_featurizer.get_reduced_length())
+
         span_mask_examples = span_mask.mask_generator(inputs, 
                     audio_featurizer.get_reduced_length(), 
                     num_predict=num_predict,
@@ -554,7 +561,6 @@ def input_fn_builder(input_file,
         output_examples['masked_positions'] = span_mask_examples['masked_positions']
         output_examples['masked_weights'] = span_mask_examples['masked_weights']
         
-        print(output_examples['masked_mask'], output_examples['masked_positions'], output_examples['masked_weights'])
         for name in list(output_examples.keys()):
           t = output_examples[name]
           if t.dtype == tf.int64:

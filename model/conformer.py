@@ -493,6 +493,9 @@ def conformer(inputs,
   pre_output = inputs
   conformer_block = []
 
+  tf.logging.info("*** pre_output ***")
+  tf.logging.info(pre_output)
+
   for layer_idx in range(mha_num_hidden_layers):
     with tf.variable_scope("layer_%d" % layer_idx):
       with tf.variable_scope("residual_ffm_input"):
