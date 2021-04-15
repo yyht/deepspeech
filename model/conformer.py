@@ -307,26 +307,28 @@ class Conformer(object):
         tf.logging.info(self.relative_position_embeddings)
         pre_output = self.linear_proj
 
-        self.conformer_block = conformer(pre_output,
-            ffm_hidden_size=config.ffm_hidden_size,
-            ffm_dropout_rate=config.ffm_dropout,
-            ffm_fc_factor=config.ffm_fc_factor,
-            ffm_expansion_factor=config.ffm_expansion_factor,
-            mha_relative_position_embeddings=self.relative_position_embeddings,
-            mha_num_attention_heads=config.mha_num_attention_heads,
-            mha_attention_head_size=mha_attention_head_size,
-            mha_attention_probs_dropout_prob=config.mha_attention_probs_dropout_prob,
-            mha_hidden_dropout_prob=config.mha_hidden_dropout_prob,
-            mha_initializer_range=config.mha_initializer_range,
-            mha_use_relative_position=config.mha_use_relative_position,
-            mha_num_hidden_layers=config.mha_num_hidden_layers,
-            mha_attention_mask=self.attention_mask,
-            conv_strides=config.cnn_strides,
-            conv_depth_multiplier=config.cnn_depth_multiplier,
-            conv_dropout_prob=config.cnn_dropout_prob,
-            relative_position_type=config.mha_relative_position_type,
-            is_training=is_training,
-            is_global_bn=is_global_bn)
+        self.conformer_block = [pre_output]
+
+        # self.conformer_block = conformer(pre_output,
+        #     ffm_hidden_size=config.ffm_hidden_size,
+        #     ffm_dropout_rate=config.ffm_dropout,
+        #     ffm_fc_factor=config.ffm_fc_factor,
+        #     ffm_expansion_factor=config.ffm_expansion_factor,
+        #     mha_relative_position_embeddings=self.relative_position_embeddings,
+        #     mha_num_attention_heads=config.mha_num_attention_heads,
+        #     mha_attention_head_size=mha_attention_head_size,
+        #     mha_attention_probs_dropout_prob=config.mha_attention_probs_dropout_prob,
+        #     mha_hidden_dropout_prob=config.mha_hidden_dropout_prob,
+        #     mha_initializer_range=config.mha_initializer_range,
+        #     mha_use_relative_position=config.mha_use_relative_position,
+        #     mha_num_hidden_layers=config.mha_num_hidden_layers,
+        #     mha_attention_mask=self.attention_mask,
+        #     conv_strides=config.cnn_strides,
+        #     conv_depth_multiplier=config.cnn_depth_multiplier,
+        #     conv_dropout_prob=config.cnn_dropout_prob,
+        #     relative_position_type=config.mha_relative_position_type,
+        #     is_training=is_training,
+        #     is_global_bn=is_global_bn)
 
       tf.logging.info("*** conformer_block ***")
       tf.logging.info(self.conformer_block)
