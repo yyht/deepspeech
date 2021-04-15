@@ -176,6 +176,7 @@ def _generate_relative_positions_matrix_t5(length, max_relative_position,
     # range_mat = tf.reshape(tf.tile(range_vec, [length]), [length, length])
     # distance_mat = range_mat - tf.transpose(range_mat)
   else:
+    
     distance_mat = tf.expand_dims(tf.range(-length+1, 1, 1), 0)
 
   num_buckets = num_buckets
