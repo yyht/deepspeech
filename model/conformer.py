@@ -547,7 +547,7 @@ def conformer(inputs,
                 is_training=is_training,
                 is_global_bn=is_global_bn)
 
-          tf.logging.info("***** conformer_conv ***")
+          tf.logging.info("****** conformer_conv ***")
           tf.logging.info(conv_output)
 
           conv_attention_output = layer_norm(conv_output + attention_output)
