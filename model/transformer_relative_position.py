@@ -176,7 +176,7 @@ def _generate_relative_positions_matrix_t5(length, max_relative_position,
     # range_mat = tf.reshape(tf.tile(range_vec, [length]), [length, length])
     # distance_mat = range_mat - tf.transpose(range_mat)
   else:
-    
+
     distance_mat = tf.expand_dims(tf.range(-length+1, 1, 1), 0)
 
   num_buckets = num_buckets
@@ -356,12 +356,6 @@ def attention_layer(from_tensor,
   from_shape = get_shape_list(from_tensor, expected_rank=[2, 3])
   to_shape = get_shape_list(to_tensor, expected_rank=[2, 3])
 
-  tf.logging.info("*** from_shape ***")
-  tf.logging.info(from_shape)
-
-  tf.logging.info("*** to_shape ***")
-  tf.logging.info(to_shape)
-
   if len(from_shape) != len(to_shape):
     raise ValueError(
         "The rank of `from_tensor` must match the rank of `to_tensor`.")
@@ -387,12 +381,6 @@ def attention_layer(from_tensor,
   from_tensor_2d = reshape_to_matrix(from_tensor)
   to_tensor_2d = reshape_to_matrix(to_tensor)
 
-  tf.logging.info("*** from_tensor_2d ***")
-  tf.logging.info(from_tensor_2d)
-
-  tf.logging.info("*** to_tensor_2d ***")
-  tf.logging.info(to_tensor_2d)
-
   # `query_layer` = [B*F, N*H]
   query_layer = tf.layers.dense(
       from_tensor_2d,
@@ -412,9 +400,6 @@ def attention_layer(from_tensor,
       name="key",
       kernel_initializer=create_initializer(initializer_range))
 
-  tf.logging.info("*** key_layer ***")
-  tf.logging.info(key_layer)
-
   # `value_layer` = [B*T, N*H]
   value_layer = tf.layers.dense(
       to_tensor_2d,
@@ -423,31 +408,19 @@ def attention_layer(from_tensor,
       name="value",
       kernel_initializer=create_initializer(initializer_range))
 
-  tf.logging.info("*** value_layer ***")
-  tf.logging.info(value_layer)
-
   # `query_layer` = [B, N, F, H]
   query_layer = transpose_for_scores(query_layer, batch_size,
                                      num_attention_heads, from_seq_length,
                                      size_per_head)
 
-  tf.logging.info("*** query_layer ***")
-  tf.logging.info(query_layer)
-
   # `key_layer` = [B, N, T, H]
   key_layer = transpose_for_scores(key_layer, batch_size, num_attention_heads,
                                    to_seq_length, size_per_head)
-
-  tf.logging.info("*** key_layer ***")
-  tf.logging.info(key_layer)
 
   # Take the dot product between "query" and "key" to get the raw
   # attention scores.
   # `attention_scores` = [B, N, F, T]
   attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
-  
-  tf.logging.info("*** attention_scores ***")
-  tf.logging.info(attention_scores)
 
   if use_relative_position:
     # print(from_seq_length, "==from_seq_length==")
@@ -479,9 +452,6 @@ def attention_layer(from_tensor,
   attention_scores = tf.multiply(attention_scores,
                                  1.0 / float(math.sqrt(float(size_per_head))))
 
-  tf.logging.info("*** attention_scores ***")
-  tf.logging.info(attention_scores)
-
   if attention_mask is not None:
     # `attention_mask` = [B, 1, F, T]
     attention_mask = tf.expand_dims(attention_mask, axis=[1])
@@ -491,9 +461,6 @@ def attention_layer(from_tensor,
     # positions we want to attend and -10000.0 for masked positions.
     adder = (1.0 - tf.cast(attention_mask, attention_scores.dtype)) * -10000.0
 
-    tf.logging.info("*** adder ***")
-    tf.logging.info(adder)
-
     # Since we are adding it to the raw scores before the softmax, this is
     # effectively the same as removing these entirely.
     attention_scores += adder
@@ -502,35 +469,20 @@ def attention_layer(from_tensor,
   # `attention_probs` = [B, N, F, T]
   attention_probs = tf.nn.softmax(attention_scores)
 
-  tf.logging.info("*** attention_probs ***")
-  tf.logging.info(attention_probs)
-
   # This is actually dropping out entire tokens to attend to, which might
   # seem a bit unusual, but is taken from the original Transformer paper.
   attention_probs = dropout(attention_probs, attention_probs_dropout_prob, dropout_name=dropout_name)
-
-  tf.logging.info("*** attention_probs ***")
-  tf.logging.info(attention_probs)
 
   # `value_layer` = [B, T, N, H]
   value_layer = tf.reshape(
       value_layer,
       [batch_size, to_seq_length, num_attention_heads, size_per_head])
 
-  tf.logging.info("*** value_layer ***")
-  tf.logging.info(value_layer)
-
   # `value_layer` = [B, N, T, H]
   value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
 
-  tf.logging.info("*** value_layer ***")
-  tf.logging.info(value_layer)
-
   # `context_layer` = [B, N, F, H]
   context_layer = tf.matmul(attention_probs, value_layer)
-
-  tf.logging.info("*** context_layer ***")
-  tf.logging.info(context_layer)
 
   if use_relative_position:
     if relative_position_type == 'relative_normal':
@@ -552,9 +504,6 @@ def attention_layer(from_tensor,
 
   # `context_layer` = [B, F, N, H]
   context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
-
-  tf.logging.info("*** context_layer ***")
-  tf.logging.info(context_layer)
 
   if do_return_2d_tensor:
     # `context_layer` = [B*F, N*H]
