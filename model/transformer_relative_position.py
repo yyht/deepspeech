@@ -476,7 +476,7 @@ def attention_layer(from_tensor,
       attention_scores += tf.expand_dims(relative_position_embeddings, axis=0)
     
   attention_scores = tf.multiply(attention_scores,
-                                 1.0 / math.sqrt(float(size_per_head)))
+                                 1.0 / float(math.sqrt(float(size_per_head))))
 
   tf.logging.info("*** attention_scores ***")
   tf.logging.info(attention_scores)
