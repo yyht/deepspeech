@@ -402,8 +402,8 @@ def get_masked_lm_output(
   # [batch_size*num_predict]
   label_weights = tf.cast(label_weights, dtype=tf.float32)
   label_weights = tf.reshape(label_weights, [-1])
-  # [batch_size*num_predict, 1]
-  label_mask = tf.expand_dims(label_weights, axis=-1)
+  # [1, batch_size*num_predict]
+  label_mask = tf.expand_dims(label_weights, axis=0)
 
   tf.logging.info("** label_mask **")
   tf.logging.info(label_mask)
@@ -435,7 +435,7 @@ def get_masked_lm_output(
   tf.logging.info("** neg_sample_prob **")
   tf.logging.info(neg_sample_prob)
 
-  neg_sample_label = tf.cast(tf.greater_equal(neg_sample_prob, 0.4), dtype=tf.float32)
+  neg_sample_label = tf.cast(tf.greater_equal(neg_sample_prob, 0.6), dtype=tf.float32)
   neg_label_mask *= neg_sample_label
 
   tf.logging.info("** neg_sample_label **")
