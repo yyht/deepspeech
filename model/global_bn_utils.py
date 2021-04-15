@@ -101,7 +101,7 @@ def batch_norm(inputs, is_training,
         gamma_initializer=gamma_initializer)
     inputs = bn_foo(inputs, training=is_training)
   else:
-    tf.logging.info("*** apply local bn ***")
+    tf.logging.info("**** apply local bn ****")
     inputs = tf.layers.batch_normalization(
         inputs=inputs,
         axis=axis,
