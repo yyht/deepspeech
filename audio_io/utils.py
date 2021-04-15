@@ -15,4 +15,15 @@ def bytestring_feature(list_of_bytestrings):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=list_of_bytestrings))
 
 def get_reduced_length(length, reduction_factor):
-  return tf.cast(tf.math.ceil(tf.divide(length, tf.cast(reduction_factor, dtype=length.dtype))), dtype=tf.int32)
+  tf.logging.info("** length **")
+  tf.logging.info(length)
+
+  tf.logging.info("** reduction_factor **")
+  tf.logging.info(reduction_factor)
+
+  length = tf.cast(length, dtype=tf.float32)
+  reduced_length = tf.math.ceil(length/reduction_factor)
+  reduced_length = tf.cast(reduced_length, dtype=tf.int32)
+  return reduced_length
+  # return tf.cast(tf.math.ceil(tf.divide(length, tf.cast(reduction_factor, dtype=length.dtype))), dtype=tf.int32)
+	
