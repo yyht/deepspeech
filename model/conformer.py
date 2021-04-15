@@ -513,32 +513,32 @@ def conformer(inputs,
         tf.logging.info(outputs)
 
       with tf.variable_scope("attention"):
-      #   with tf.variable_scope("self"):
-      #     [attention_head, attention_probs] = transformer_relative_position.attention_layer(
-      #               from_tensor=outputs,
-      #               to_tensor=outputs,
-      #               attention_mask=mha_attention_mask,
-      #               num_attention_heads=mha_num_attention_heads,
-      #               size_per_head=mha_attention_head_size,
-      #               attention_probs_dropout_prob=mha_attention_probs_dropout_prob,
-      #               initializer_range=mha_initializer_range,
-      #               do_return_2d_tensor=False,
-      #               batch_size=batch_size,
-      #               from_seq_length=seq_length,
-      #               to_seq_length=seq_length,
-      #               use_relative_position=mha_use_relative_position,
-      #               dropout_name=tf.get_variable_scope().name,
-      #               relative_position_type=relative_position_type,
-      #               relative_position_embeddings=mha_relative_position_embeddings)
+        with tf.variable_scope("self"):
+          [attention_head, attention_probs] = transformer_relative_position.attention_layer(
+                    from_tensor=outputs,
+                    to_tensor=outputs,
+                    attention_mask=mha_attention_mask,
+                    num_attention_heads=mha_num_attention_heads,
+                    size_per_head=mha_attention_head_size,
+                    attention_probs_dropout_prob=mha_attention_probs_dropout_prob,
+                    initializer_range=mha_initializer_range,
+                    do_return_2d_tensor=False,
+                    batch_size=batch_size,
+                    from_seq_length=seq_length,
+                    to_seq_length=seq_length,
+                    use_relative_position=mha_use_relative_position,
+                    dropout_name=tf.get_variable_scope().name,
+                    relative_position_type=relative_position_type,
+                    relative_position_embeddings=mha_relative_position_embeddings)
         
-      #     tf.logging.info("*** attention_head ***")
-      #     tf.logging.info(attention_head)
+          tf.logging.info("*** attention_head ***")
+          tf.logging.info(attention_head)
 
-      #   attention_head = tf.nn.dropout(attention_head, keep_prob=1-mha_hidden_dropout_prob)
-      #   attention_output = layer_norm(attention_head + outputs)
+        attention_head = tf.nn.dropout(attention_head, keep_prob=1-mha_hidden_dropout_prob)
+        attention_output = layer_norm(attention_head + outputs)
 
         with tf.variable_scope("conformer_conv"):
-          attention_output = outputs
+
           conv_output = conformer_conv(attention_output, 
                 kernel_size=conv_kernel_sizes, 
                 strides=conv_strides,
@@ -612,7 +612,7 @@ def conformer_conv(inputs,
   # [batch, seq_len, 1, dims]
   outputs = tf.expand_dims(inputs, 2)
 
-  tf.logging.info("*** conformer conv outputs ***")
+  tf.logging.info("**** conformer conv outputs ***")
   tf.logging.info(outputs)
 
   # [batch, seq_len, 1, filters*2]
