@@ -338,7 +338,7 @@ class Conformer(object):
                   dropout_rate=config.fc_dropout_rate,
                   is_training=is_training)
 
-      tf.logging.info("*** fc_output ****")
+      tf.logging.info("**** fc_output ****")
       tf.logging.info(self.fc_output)
 
       with tf.variable_scope('cls/predictions'):
