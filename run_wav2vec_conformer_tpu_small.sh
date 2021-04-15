@@ -26,10 +26,10 @@ nohup python ./run_wav2vec_conformer_tpu.py \
 	--audio_featurizer_config_path chinese_asr_v1/audio_featurizer_config.json \
 	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config.json \
 	-target_feature_mode linear \
-	--num_predict 200 \
+	--num_predict 150 \
 	--min_tok 10 \
 	--max_tok 10 \
-	--mask_prob 0.4 \
+	--mask_prob 0.25 \
 	--is_pretraining true \
 	--monitoring true \
 	--transcript_seq_length 81

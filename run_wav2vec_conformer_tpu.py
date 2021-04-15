@@ -330,7 +330,7 @@ def model_fn_builder(model_config,
       hook_dict['clean_loss'] = clean_loss
       hook_dict['masked_weight'] = tf.reduce_mean(tf.reduce_sum(masked_weights, axis=-1))
 
-      reduced_length = audio_utils.get_reduced_length(input_length, reduced_factor)
+      reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
       # for key in noise_code_loss_dict:
       #   hook_dict["noise_{}".format(key)] = noise_code_loss_dict[key]
