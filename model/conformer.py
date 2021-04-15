@@ -434,24 +434,32 @@ class Conformer(object):
 
   def get_code_book(self, is_pretraining):
     if is_pretraining:
+      tf.logging.info("** return code_book **")
+      tf.logging.info(self.code_book)
       return self.code_book
     else:
       return None
 
   def get_code_discrete(self, is_pretraining):
     if is_pretraining:
+      tf.logging.info("** return code_discrete **")
+      tf.logging.info(self.code_discrete)
       return self.code_discrete
     else:
       return None
 
   def get_code_dense(self, is_pretraining):
     if is_pretraining:
+      tf.logging.info("** return code_dense **")
+      tf.logging.info(self.code_dense)
       return self.code_dense
     else:
       return None
 
   def get_code_loss(self, is_pretraining):
     if is_pretraining:
+      tf.logging.info("** return code_loss_dict **")
+      tf.logging.info(self.code_loss_dict)
       return self.code_loss_dict
     else:
       return None

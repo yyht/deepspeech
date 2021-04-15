@@ -226,7 +226,7 @@ def model_fn_builder(model_config,
 
     tf.logging.info("*** Features ***")
     for name in sorted(features.keys()):
-      tf.logging.info("  name = %s, shape = %s" % (name, features[name].shape))
+      tf.logging.info("  name = %s, shape = %s, dtype = %s" % (name, features[name].shape, features[name].dtype))
 
     clean_feature = features["clean_feature"]
     noise_feature = features["noise_feature"]
@@ -242,31 +242,24 @@ def model_fn_builder(model_config,
     
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-    # (clean_sequence_output, 
-    # clean_code_discrete, 
-    # clean_code_dense,
-    # clean_code_loss_dict) = create_model(
-    #     model_config=model_config,
-    #     ipnut_features=clean_feature,
-    #     is_training=is_training,
-    #     input_length=feature_seq_length,
-    #     time_feature_mask=time_feature_mask)
+    (clean_sequence_output, 
+    clean_code_discrete, 
+    clean_code_dense,
+    clean_code_loss_dict) = create_model(
+        model_config=model_config,
+        ipnut_features=clean_feature,
+        is_training=is_training,
+        input_length=feature_seq_length,
+        time_feature_mask=time_feature_mask)
 
-    # (clean_loss, 
-    # clean_per_example_loss) = get_masked_lm_output(
-    #         clean_sequence_output, 
-    #         masked_positions,
-    #         clean_code_dense,
-    #         masked_weights,
-    #         margin=FLAGS.circle_margin,
-    #         gamma=FLAGS.circle_gamma)
-
-    clean_code_loss_dict = {}
-    clean_feat = tf.layers.dense(
-                      clean_feature, 
-                      units=1
-                    )
-    clean_loss = tf.reduce_mean(clean_feat)
+    (clean_loss, 
+    clean_per_example_loss) = get_masked_lm_output(
+            clean_sequence_output, 
+            masked_positions,
+            clean_code_dense,
+            masked_weights,
+            margin=FLAGS.circle_margin,
+            gamma=FLAGS.circle_gamma)
 
     total_loss = (clean_loss)
     for key in clean_code_loss_dict:
