@@ -467,7 +467,7 @@ def attention_layer(from_tensor,
       # key_position_scores_r_t is [B, N, F, F|T]
       key_position_scores_r_t = tf.transpose(key_position_scores_r, [1, 2, 0, 3])
       attention_scores = attention_scores + key_position_scores_r_t
-      tf.logging.info("*** apply nazhe-relative position bias on attention_scores ****")
+      tf.logging.info("**** apply nazhe-relative position bias on attention_scores ****")
     elif relative_position_type == 'relative_t5':
       # relative_position_embeddings: [F, T, N]--> [N, F, T]
       relative_position_embeddings = tf.transpose(relative_position_embeddings, [2,0,1])
