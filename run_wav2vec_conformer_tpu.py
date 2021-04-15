@@ -218,7 +218,8 @@ def model_fn_builder(model_config,
                 num_train_steps, 
                 num_warmup_steps,
                 output_dir,
-                use_tpu):
+                use_tpu,
+                reduced_factor):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -327,6 +328,10 @@ def model_fn_builder(model_config,
       hook_dict = {}
       # hook_dict['noise_loss'] = noise_loss
       hook_dict['clean_loss'] = clean_loss
+      hook_dict['masked_weight'] = tf.reduce_mean(tf.reduce_sum(masked_weights, axis=-1))
+
+      reduced_length = audio_utils.get_reduced_length(input_length, reduced_factor)
+      hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
       # for key in noise_code_loss_dict:
       #   hook_dict["noise_{}".format(key)] = noise_code_loss_dict[key]
       for key in clean_code_loss_dict:
@@ -679,7 +684,8 @@ def main(_):
       num_train_steps=FLAGS.num_train_steps,
       num_warmup_steps=FLAGS.num_warmup_steps,
       output_dir=output_dir,
-      use_tpu=FLAGS.use_tpu)
+      use_tpu=FLAGS.use_tpu,
+      reduced_factor=audio_featurizer.get_reduced_factor())
 
   estimator = tf.contrib.tpu.TPUEstimator(
       use_tpu=FLAGS.use_tpu,
