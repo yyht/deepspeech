@@ -389,6 +389,12 @@ def get_masked_lm_output(
   masked_input_tensor = gather_indexes(input_tensor, positions)
   unmasked_code_tensor = gather_indexes(code_dense, positions)
 
+  tf.logging.info("** masked_input_tensor **")
+  tf.logging.info(masked_input_tensor)
+
+  tf.logging.info("** unmasked_code_tensor **")
+  tf.logging.info(unmasked_code_tensor)
+
   masked_input_tensor = tf.nn.l2_normalize(masked_input_tensor, axis=-1)
   unmasked_code_tensor = tf.nn.l2_normalize(unmasked_code_tensor, axis=-1)
 
@@ -399,16 +405,26 @@ def get_masked_lm_output(
   # [batch_size*num_predict, 1]
   label_mask = tf.expand_dims(label_weights, axis=-1)
 
+  tf.logging.info("** label_mask **")
+  tf.logging.info(label_mask)
+
   # [batch_size*num_predict, batch_size*num_predict]
   similarity_matrix = tf.matmul(
             masked_input_tensor, 
             unmasked_code_tensor,
             transpose_b=True)
 
-  print(similarity_matrix)
+  tf.logging.info("** similarity_matrix **")
+  tf.logging.info(similarity_matrix)
 
   pos_label_mask = tf.eye(masked_tensor_shape[0]) * label_mask
   neg_label_mask = (1.0 - pos_label_mask) * label_mask
+
+  tf.logging.info("** pos_label_mask **")
+  tf.logging.info(pos_label_mask)
+
+  tf.logging.info("** neg_label_mask **")
+  tf.logging.info(neg_label_mask)
 
   neg_sample_prob = tf.random_uniform(
               [masked_tensor_shape[0], masked_tensor_shape[0]],
@@ -416,10 +432,14 @@ def get_masked_lm_output(
               maxval=0.999,
               dtype=tf.float32)
 
+  tf.logging.info("** neg_sample_prob **")
+  tf.logging.info(neg_sample_prob)
+
   neg_sample_label = tf.cast(tf.greater_equal(neg_sample_prob, 0.4), dtype=tf.float32)
   neg_label_mask *= neg_sample_label
 
-  print(similarity_matrix, pos_label_mask, neg_label_mask)
+  tf.logging.info("** neg_sample_label **")
+  tf.logging.info(neg_sample_label)
 
   per_example_loss = circle_loss_utils.circle_loss(
                 similarity_matrix, 
@@ -427,6 +447,9 @@ def get_masked_lm_output(
                 neg_label_mask,
                 margin=0.25,
                 gamma=32)
+
+  tf.logging.info("** circle per_example_loss **")
+  tf.logging.info(per_example_loss)
 
   loss = tf.reduce_sum(per_example_loss*label_weights) / (1e-10+tf.reduce_sum(label_weights))
 
