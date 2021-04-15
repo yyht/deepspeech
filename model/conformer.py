@@ -248,11 +248,13 @@ class Conformer(object):
           tf.logging.info("*** apply mask before linear_proj ***")
           if time_feature_mask is not None:
             tf.logging.info("*** apply time mask before linear_proj ***")
+            tf.logging.info(time_feature_mask)
             time_feature_mask = tf.cast(time_feature_mask, dtype=tf.float32)
             # [B, T, 1]
             self.conv_subsampling *= tf.expand_dims(time_feature_mask, axis=-1)
           if freq_feature_mask is not None:
             tf.logging.info("***@* apply freq mask before linear_proj ***")
+            tf.logging.info(freq_feature_mask)
             freq_feature_mask = tf.cast(freq_feature_mask, dtype=tf.float32)
             self.conv_subsampling *= freq_feature_mask
 
@@ -280,6 +282,8 @@ class Conformer(object):
                                 sequence_mask)
       else:
         self.attention_mask = None
+      tf.logging.info("*** attention_mask ***")
+      tf.logging.info(self.attention_mask)
 
       with tf.variable_scope('encoder'):
         tf.logging.info("*** mha encoder ***")
@@ -299,7 +303,8 @@ class Conformer(object):
                       bidirectional=config.mha_bidirectional,
                       relative_position_type=config.mha_relative_position_type,
                       relative_position_embedding_type=config.mha_relative_position_embedding_type)
-
+        tf.logging.info("*** relative_position_embeddings ***")
+        tf.logging.info(self.relative_position_embeddings)
         pre_output = self.linear_proj
 
         self.conformer_block = conformer(pre_output,
@@ -323,6 +328,9 @@ class Conformer(object):
             is_training=is_training,
             is_global_bn=is_global_bn)
 
+      tf.logging.info("*** conformer_block ***")
+      tf.logging.info(self.conformer_block)
+
       with tf.variable_scope('fc_module'):
         self.fc_output = fc_block(self.conformer_block[-1],
                   fc_layers=config.fc_layers, 
@@ -330,12 +338,16 @@ class Conformer(object):
                   dropout_rate=config.fc_dropout_rate,
                   is_training=is_training)
 
+      tf.logging.info("*** fc_output ***")
+      tf.logging.info(self.fc_output)
+
       with tf.variable_scope('cls/predictions'):
-        tf.logging.info("*** fc_output ***")
-        tf.logging.info(self.fc_output)
         self.logits = tf.layers.dense(self.fc_output, 
                                 config.vocab_size, 
                                 kernel_initializer=initializer)
+
+        tf.logging.info("*** logits ***")
+        tf.logging.info(self.logits)
 
   def get_unmasked_linear_proj(self):
     with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
