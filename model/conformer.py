@@ -538,6 +538,7 @@ def conformer(inputs,
       #   attention_output = layer_norm(attention_head + outputs)
 
         with tf.variable_scope("conformer_conv"):
+          attention_output = outputs
           conv_output = conformer_conv(attention_output, 
                 kernel_size=conv_kernel_sizes, 
                 strides=conv_strides,
