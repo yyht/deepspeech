@@ -599,7 +599,7 @@ def main(_):
       dump_into_tf_config(cluster, task_type, task_index)
       distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
                   num_gpus_per_worker=FLAGS.num_gpus,
-                  cross_tower_ops_type='default', # default, horovod
+                  cross_tower_ops_type='horovod', # default, horovod
                   all_dense=True)
 
       worker_hosts = FLAGS.worker_hosts.split(",")
