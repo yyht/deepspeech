@@ -1,5 +1,6 @@
 {
-	"vocab_size": 4491,
+	"char_vocab_size": 4491,
+	"pinyin_vocab_size": null,
 	"subsampling_filters": [32, 32, 32],
 	"subsampling_kernel_sizes": [[3, 3], [3, 3], [3, 3]],
 	"subsampling_strides": [[2, 2], [2, 2], [1, 1]],
@@ -40,5 +41,6 @@
 
 	"num_hidden_layers": 12,
 
-	"time_major": false
+	"time_major": false,
+	"output_mode": "char"
 }

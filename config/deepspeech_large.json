@@ -1,5 +1,6 @@
 {
-	"vocab_size": 4491,
+	"char_vocab_size": 4491,
+	"pinyin_vocab_size": null,
 	"cnn_filters": [32, 32, 96],
 	"cnn_kernel_sizes": [[11, 41], [11, 21], [11, 21]],
 	"cnn_strides": [[2, 2], [2, 2], [1, 2]],
@@ -15,5 +16,6 @@
 	"is_rnn_bidirectional": true,
 	"is_cnn_padding": true,
 	"time_major": false,
-	"num_hidden_layers": 2
+	"num_hidden_layers": 2,
+	"output_mode": "char"
 }

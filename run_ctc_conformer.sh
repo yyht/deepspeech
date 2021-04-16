@@ -19,8 +19,10 @@ pai -name tensorflow1120
     -DmaxHungTimeBeforeGCInSeconds=0
     -DmaxTrainingTimeInHour=1440
     -DautoStrategy='false'
+    -DautoMixedPrecision=true
+    -DenableTAO=true
 	-Dcluster='{\"worker\":{\"count\":10, \"gpu\":100}}'
-    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/conformer_params_reduced_length'
+    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/conformer_params_reduced_length_base'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

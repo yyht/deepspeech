@@ -1,6 +1,6 @@
 {
-	"char_vocab_size": 4491,
-	"pinyin_vocab_size": null,
+	"char_vocab_size": 4362,
+	"pinyin_vocab_size": 1196,
 	"subsampling_filters": [32, 32, 32],
 	"subsampling_kernel_sizes": [[3, 3], [3, 3], [3, 3]],
 	"subsampling_strides": [[2, 2], [2, 2], [1, 1]],
@@ -9,23 +9,23 @@
 	"proj_dropout": 0.1,
 	"ffm_expansion_factor": 4,
 	"ffm_dropout": 0.1,
-	"ffm_hidden_size": 256,
+	"ffm_hidden_size": 512,
 	"ffm_fc_factor": 0.5,
 
-	"mha_hidden_size": 256,
-	"mha_num_attention_heads": 4,
-	"mha_max_relative_position": 64,
+	"mha_hidden_size": 512,
+	"mha_num_attention_heads": 8,
+	"mha_max_relative_position": 128,
 	"mha_num_buckets": 32,
 	"mha_bidirectional": true,
 	"mha_initializer_range": 0.02,
 	"mha_relative_position_type": "relative_t5",
 	"mha_relative_position_embedding_type": "sinusoidal_trainable",
-	"mha_num_hidden_layers": 12,
+	"mha_num_hidden_layers": 8,
 	"mha_attention_probs_dropout_prob": 0.1,
 	"mha_hidden_dropout_prob": 0.1,
 	"mha_use_relative_position": true,
 
-	"cnn_kernel_sizes": 32,
+	"cnn_kernel_sizes": 31,
 	"cnn_strides": 1,
 	"cnn_depth_multiplier": 1,
 	"cnn_dropout_prob": 0.1,
@@ -36,8 +36,8 @@
 	"fc_hidden_size": 512,
 	"fc_dropout_rate": 0.1,
 
-	"bottleneck_size": 384,
-	"bottleneck_dims": 256,
+	"bottleneck_size": 512,
+	"bottleneck_dims": 512,
 
 	"vqvae_beta": 0.25,
 	"vqvae_gamma": 0.1,
@@ -45,5 +45,5 @@
 	"num_hidden_layers": 12,
 
 	"time_major": false,
-	"output_mode": "char"
+	"output_mode": "pinyin"
 }

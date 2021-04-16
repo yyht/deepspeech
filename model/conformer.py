@@ -20,7 +20,8 @@ https://github.com/huseinzol05/NLP-Models-Tensorflow/blob/master/speech-to-text/
 
 class ConformerConfig(object):
   def __init__(self,
-        vocab_size,
+        char_vocab_size,
+        pinyin_vocab_size=None,
         subsampling_filters=[144, 144],
         subsampling_kernel_sizes=[[3, 3], [3, 3]],
         subsampling_strides=[[2, 1], [2, 1]],
@@ -61,9 +62,20 @@ class ConformerConfig(object):
         vqvae_beta=0.25,
         vqvae_gamma=0.1,
 
-        time_major=False):
+        time_major=False,
+        output_mode="char"):
 
-    self.vocab_size = vocab_size
+    self.char_vocab_size = char_vocab_size
+    self.pinyin_vocab_size = pinyin_vocab_size
+    self.output_mode = output_mode
+    if output_mode == "char":
+      self.vocab_size = self.char_vocab_size
+      tf.logging.info(output_mode)
+      tf.logging.info(self.vocab_size)
+    elif output_mode == "pinyin":
+      self.vocab_size = self.pinyin_vocab_size
+      tf.logging.info(output_mode)
+      tf.logging.info(self.vocab_size)
     self.subsampling_filters = subsampling_filters
     self.subsampling_kernel_sizes = subsampling_kernel_sizes
     self.subsampling_strides = subsampling_strides
@@ -118,10 +130,14 @@ class ConformerConfig(object):
   @classmethod
   def from_dict(cls, json_object):
     """Constructs a `BertConfig` from a Python dictionary of parameters."""
-    config = ConformerConfig(vocab_size=None)
+    config = ConformerConfig(char_vocab_size=None)
     for (key, value) in six.iteritems(json_object):
       config.__dict__[key] = value
       print(key, value, '===model parameters===')
+    if config.__dict__['output_mode'] == 'char':
+      config.__dict__['vocab_size'] = config.__dict__['char_vocab_size']
+    elif config.__dict__['output_mode'] == "pinyin":
+      config.__dict__['vocab_size'] = config.__dict__['pinyin_vocab_size']
     return config
 
   @classmethod
@@ -155,6 +171,9 @@ class Conformer(object):
 
     config = copy.deepcopy(config)
     self.config = copy.deepcopy(config)
+    for key in config.__dict__:
+      print(key, "==config==", config.__dict__[key])
+
     if not is_training:
       config.mha_hidden_dropout_prob = 0.0
       config.mha_attention_probs_dropout_prob = 0.0
@@ -335,23 +354,24 @@ class Conformer(object):
       tf.logging.info("*** conformer_block ***")
       tf.logging.info(self.conformer_block)
 
-      with tf.variable_scope('fc_module'):
-        self.fc_output = fc_block(self.conformer_block[-1],
-                  fc_layers=config.fc_layers, 
-                  hidden_size=config.fc_hidden_size, 
-                  dropout_rate=config.fc_dropout_rate,
-                  is_training=is_training)
+      if not is_pretraining:
+        with tf.variable_scope('fc_module'):
+          self.fc_output = fc_block(self.conformer_block[-1],
+                    fc_layers=config.fc_layers, 
+                    hidden_size=config.fc_hidden_size, 
+                    dropout_rate=config.fc_dropout_rate,
+                    is_training=is_training)
 
-      tf.logging.info("**** fc_output ****")
-      tf.logging.info(self.fc_output)
+        tf.logging.info("**** fc_output ****")
+        tf.logging.info(self.fc_output)
 
-      with tf.variable_scope('cls/predictions'):
-        self.logits = tf.layers.dense(self.fc_output, 
-                                config.vocab_size, 
-                                kernel_initializer=initializer)
+        with tf.variable_scope('cls/predictions'):
+          self.logits = tf.layers.dense(self.fc_output, 
+                                  config.vocab_size, 
+                                  kernel_initializer=initializer)
 
-        tf.logging.info("*** logits ***")
-        tf.logging.info(self.logits)
+          tf.logging.info("*** logits ***")
+          tf.logging.info(self.logits)
 
   def get_unmasked_linear_proj(self):
     with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
@@ -678,22 +698,25 @@ def residual_ffm_block(inputs, hidden_size,
   outputs = inputs + fc_factor * outputs
   return outputs
 
-from model.global_bn_utils import batch_norm as global_batch_norm
 def batch_norm(inputs, is_training, 
               batch_norm_decay=0.997, 
               batch_norm_eps=1e-5,
               is_global_bn=False):
-  return global_batch_norm(inputs=inputs,
+  try:
+    from model.global_bn_utils import batch_norm as global_batch_norm
+
+    return global_batch_norm(inputs=inputs,
             is_training=is_training, 
             batch_norm_decay=batch_norm_decay,
             batch_norm_eps=batch_norm_eps,
             is_global_bn=is_global_bn)
-  # return tf.layers.batch_normalization(
-  #         inputs=inputs, 
-  #         momentum=batch_norm_decay, 
-  #         epsilon=batch_norm_eps,
-  #         fused=True, 
-  #         training=is_training)
+  except:
+    return tf.layers.batch_normalization(
+            inputs=inputs, 
+            momentum=batch_norm_decay, 
+            epsilon=batch_norm_eps,
+            fused=True, 
+            training=is_training)
 
 def conv2d_bn_layer(inputs, 
                   filters, 

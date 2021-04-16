@@ -147,6 +147,13 @@ flags.DEFINE_float("alpha", 0.5,
 flags.DEFINE_float("gamma", 2.0,
                      "How many steps to make in each estimator call.")
 
+flags.DEFINE_string(
+    "output_mode", "char",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
+
+flags.DEFINE_integer("blank_index", -1,
+                     "How many steps to make in each estimator call.")
+
 # with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, 'evn.txt'), "w") as fwobj:
 #   tf_src_path = "/".join(tf.sysconfig.get_include().split("/")[:-2]+['tensorflow'])
 #   fwobj.write(tf_src_path+"\n")
@@ -207,13 +214,17 @@ def create_model(model_config,
                   logits, 
                   reduced_length, 
                   label_length, 
-                  time_major=model_config.time_major
+                  time_major=model_config.time_major,
+                  blank_index=FLAGS.blank_index
                   )
+      valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
+      valid_loss_mask = tf.cast(valid_loss_mask, dtype=tf.float32)
+
       if FLAGS.if_focal_ctc:
         tf.logging.info("*** apply sparse focal ctc loss ***")
         p = tf.exp(-per_example_loss)
         per_example_loss *= FLAGS.alpha*tf.pow(1-p, FLAGS.gamma)
-      loss = tf.reduce_mean(per_example_loss)
+      loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
     elif ctc_loss_type == 'dense_ctc':
       tf.logging.info("*** apply dense ctc loss ***")
       per_example_loss = ctc_loss.dense_ctc_loss(
@@ -221,10 +232,13 @@ def create_model(model_config,
                     logits, 
                     reduced_length, 
                     label_length, 
-                    blank_index=0,
+                    blank_index=FLAGS.blank_index,
                     indices=unique_indices,
                     time_major=model_config.time_major)
-      loss = tf.reduce_mean(per_example_loss)
+      valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
+      valid_loss_mask = tf.cast(valid_loss_mask, dtype=tf.float32)
+
+      loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
     # elif ctc_loss_type == 'warp_ctc':
     #   from loss.warp_ctc_loss import warpctc_loss
     #   tf.logging.info("*** apply warp ctc loss ***")
@@ -415,9 +429,10 @@ def input_fn_builder(input_file,
       "noise_id": tf.FixedLenFeature([], tf.int64),
       "gender_id": tf.FixedLenFeature([], tf.int64),
       "dialect_id": tf.FixedLenFeature([], tf.int64),
-      "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
+      "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64),
+      "transcript_pinyin_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
   }
-
+    
   def _decode_record(record, name_to_features):
     """Decodes a record to a TensorFlow example."""
     example = tf.parse_single_example(record, name_to_features)
@@ -438,6 +453,12 @@ def input_fn_builder(input_file,
 
     # [T, D, 1]
     output_examples = {}
+    print(FLAGS.output_mode, "==output_mode==")
+
+    if FLAGS.output_mode == 'char':
+      output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
+    elif FLAGS.output_mode == 'pinyin':
+      output_examples['transcript_id'] = tf.cast(example['transcript_pinyin_id'], dtype=tf.int32)
 
     output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
     output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
@@ -446,7 +467,6 @@ def input_fn_builder(input_file,
     output_examples['clean_audio'] = tf.cast(clean_audio, dtype=tf.float32)
     output_examples['noise_audio'] = tf.cast(noise_audio, dtype=tf.float32)
     output_examples['speaker_id'] = tf.cast(example['speaker_id'], dtype=tf.int32)
-    output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
     output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
     output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
     feature_shape = shape_list(noise_feature)
@@ -499,10 +519,10 @@ def input_fn_builder(input_file,
               "noise_aug_feature":0.0,
               "clean_audio":0.0,
               "noise_audio":0.0,
-              "speaker_id":-1,
+              "speaker_id":0,
               "transcript_id":0,
-              "gender_id":-1,
-              "dialect_id":-1,
+              "gender_id":0,
+              "dialect_id":0,
               "unique_labels":0,
               "unique_indices":0,
               "feature_seq_length":0
@@ -540,6 +560,11 @@ def main(_):
   
   model_config = deepspeech.DeepSpeechConfig.from_json_file(FLAGS.bert_config_file)
 
+  if FLAGS.blank_index != 0:
+    model_config.__dict__['vocab_size'] += 1
+    tf.logging.info("** blank_index is added to the vocab-size")
+    tf.logging.info(model_config.__dict__['vocab_size'])
+
   config_name = FLAGS.bert_config_file.split("/")[-1]
   import os
   output_dir = os.path.join(FLAGS.buckets, FLAGS.output_dir)
@@ -574,7 +599,7 @@ def main(_):
       dump_into_tf_config(cluster, task_type, task_index)
       distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
                   num_gpus_per_worker=FLAGS.num_gpus,
-                  cross_tower_ops_type='horovod', # default, horovod
+                  cross_tower_ops_type='default', # default, horovod
                   all_dense=True)
 
       worker_hosts = FLAGS.worker_hosts.split(",")

@@ -1160,6 +1160,7 @@ chan1
 liao1
 pao2
 lun1
+jiao2
 han1
 nian1
 yu1
@@ -1188,6 +1189,8 @@ tun4
 zao2
 sao4
 gen4
+qiang4
 hang1
 chuai3
 xiao2
+cuan2

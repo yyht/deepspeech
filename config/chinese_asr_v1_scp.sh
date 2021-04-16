@@ -78,3 +78,4 @@
 /home/htxu91/source/ossutil64 cp --parallel 1000 --jobs 1 oss://alg-misc/BERT/ASR/chinese/aishell_8000/train/chinese_asr_7.tfrecord ./chinese_asr_v1/aishell_8000/train/chinese_asr_7.tfrecord
 /home/htxu91/source/ossutil64 cp --parallel 1000 --jobs 1 oss://alg-misc/BERT/ASR/chinese/aishell_8000/train/chinese_asr_8.tfrecord ./chinese_asr_v1/aishell_8000/train/chinese_asr_8.tfrecord
 /home/htxu91/source/ossutil64 cp --parallel 1000 --jobs 1 oss://alg-misc/BERT/ASR/chinese/aishell_8000/train/chinese_asr_9.tfrecord ./chinese_asr_v1/aishell_8000/train/chinese_asr_9.tfrecord
+gsutil cp -r ./chinese_asr_v1 gs://yyht_source/pretrain/

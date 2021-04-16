@@ -151,6 +151,9 @@ flags.DEFINE_string(
     "target_feature_mode", "soft-em",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
+flags.DEFINE_integer("blank_index", -1,
+                     "How many steps to make in each estimator call.")
+
 # with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, 'evn.txt'), "w") as fwobj:
 #   tf_src_path = "/".join(tf.sysconfig.get_include().split("/")[:-2]+['tensorflow'])
 #   fwobj.write(tf_src_path+"\n")
@@ -217,7 +220,8 @@ def create_model(model_config,
                   logits, 
                   reduced_length, 
                   label_length, 
-                  time_major=model_config.time_major
+                  time_major=model_config.time_major,
+                  blank_index=FLAGS.blank_index
                   )
       if FLAGS.if_focal_ctc:
         tf.logging.info("*** apply sparse focal ctc loss ***")
@@ -231,7 +235,7 @@ def create_model(model_config,
                     logits, 
                     reduced_length, 
                     label_length, 
-                    blank_index=0,
+                    blank_index=FLAGS.blank_index,
                     indices=unique_indices,
                     time_major=model_config.time_major)
       loss = tf.reduce_mean(per_example_loss)
@@ -426,8 +430,9 @@ def input_fn_builder(input_file,
       "gender_id": tf.FixedLenFeature([], tf.int64),
       "dialect_id": tf.FixedLenFeature([], tf.int64),
       "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
+      "transcript_pinyin_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
   }
-
+  
   def _decode_record(record, name_to_features):
     """Decodes a record to a TensorFlow example."""
     example = tf.parse_single_example(record, name_to_features)
@@ -449,6 +454,11 @@ def input_fn_builder(input_file,
     # [T, D, 1]
     output_examples = {}
 
+    if FLAGS.output_mode == 'char':
+      output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
+    elif FLAGS.output_mode == 'pinyin':
+      output_examples['transcript_id'] = tf.cast(example['transcript_pinyin_id'], dtype=tf.int32)
+
     output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
     output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
     output_examples['clean_aug_feature'] = tf.cast(clean_aug_feature, dtype=tf.float32)
@@ -456,7 +466,7 @@ def input_fn_builder(input_file,
     output_examples['clean_audio'] = tf.cast(clean_audio, dtype=tf.float32)
     output_examples['noise_audio'] = tf.cast(noise_audio, dtype=tf.float32)
     output_examples['speaker_id'] = tf.cast(example['speaker_id'], dtype=tf.int32)
-    output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
+    
     output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
     output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
     feature_shape = shape_list(noise_feature)
@@ -464,7 +474,7 @@ def input_fn_builder(input_file,
     output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
     [unique_labels, 
     unique_indices] = ctc_ops.ctc_unique_labels(
-            tf.cast(example['transcript_id'], dtype=tf.int32)
+            tf.cast(output_examples['transcript_id'], dtype=tf.int32)
             )
     output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
     output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
@@ -550,6 +560,11 @@ def main(_):
   
   model_config = conformer.ConformerConfig.from_json_file(FLAGS.bert_config_file)
 
+  if FLAGS.blank_index != 0:
+    model_config.__dict__['vocab_size'] += 1
+    tf.logging.info("** blank_index is added to the vocab-size")
+    tf.logging.info(model_config.__dict__['vocab_size'])
+    
   config_name = FLAGS.bert_config_file.split("/")[-1]
   import os
   output_dir = os.path.join(FLAGS.buckets, FLAGS.output_dir)

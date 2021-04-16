@@ -29,6 +29,9 @@ from loss import ctc_loss
 import json
 from audio_io import utils as audio_utils
 from loss import ctc_ops
+from tensorflow.python.ops import array_ops
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import sparse_tensor
 
 # import subprocess
 # subprocess.call(['sh', './deepspeech/install_warpctc.sh'])
@@ -144,7 +147,8 @@ flags.DEFINE_integer("beam_width", 100,
                      "How many steps to make in each estimator call.")
 flags.DEFINE_integer("top_paths", 100,
                      "How many steps to make in each estimator call.")
-
+flags.DEFINE_integer("blank_index", 100,
+                     "How many steps to make in each estimator call.")
 
 # with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, 'evn.txt'), "w") as fwobj:
 #   tf_src_path = "/".join(tf.sysconfig.get_include().split("/")[:-2]+['tensorflow'])
@@ -165,12 +169,21 @@ flags.DEFINE_integer("top_paths", 100,
 
 # from loss.warp_ctc_loss import warpctc_loss
 
+from tensorflow.python.ops import array_ops
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import sparse_tensor
+def _get_dim(tensor, i):
+  """Get value of tensor shape[i] preferring static value if available."""
+  return tensor_shape.dimension_value(
+      tensor.shape[i]) or array_ops.shape(tensor)[i]
+
 def create_model(model_config, 
                 ipnut_features,
                 is_training,
                 beam_width=100,
                 top_paths=100,
-                input_length=None):
+                input_length=None,
+                blank_index=0):
   """Creates a classification model."""
   model = deepspeech.DeepSpeech(
       config=model_config,
@@ -189,6 +202,21 @@ def create_model(model_config,
   # from [batch_size, reduced_length, dims]
   # to [reduced_length, batch_size, dims]
   decoded_logits = tf.transpose(logits, [1,0,2])
+  
+  if blank_index < 0:
+    blank_index += _get_dim(decoded_logits, 2)
+
+  if blank_index != _get_dim(decoded_logits, 2) - 1:
+    decoded_logits = array_ops.concat([
+        decoded_logits[:, :, :blank_index],
+        decoded_logits[:, :, blank_index + 1:],
+        decoded_logits[:, :, blank_index:blank_index + 1],
+    ],
+                              axis=2)
+    tf.logging.info("*** modify blank index **")
+    tf.logging.info(blank_index)
+    tf.logging.info( _get_dim(decoded_logits, 2) - 1)
+
   (decoded_path, 
     log_probability) = tf.nn.ctc_beam_search_decoder(
     decoded_logits, reduced_length, 
@@ -274,6 +302,11 @@ def main(_):
   
   model_config = deepspeech.DeepSpeechConfig.from_json_file(FLAGS.bert_config_file)
 
+  if FLAGS.blank_index != 0:
+    model_config.__dict__['vocab_size'] += 1
+    tf.logging.info("** blank_index is added to the vocab-size")
+    tf.logging.info(model_config.__dict__['vocab_size'])
+
   config_name = FLAGS.bert_config_file.split("/")[-1]
   import os
   output_dir = os.path.join(FLAGS.buckets, FLAGS.output_dir)
@@ -311,7 +344,8 @@ def main(_):
       init_checkpoint=init_checkpoint,
       audio_featurizer=audio_featurizer,
       beam_width=FLAGS.beam_width,
-      top_paths=FLAGS.top_paths)
+      top_paths=FLAGS.top_paths,
+      blank_index=FLAGS.blank_index)
 
   estimator = tf.estimator.Estimator(
               model_fn=model_fn,

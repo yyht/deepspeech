@@ -20,7 +20,8 @@ class DeepSpeechConfig(object):
   smaller kernel is applied to time-step
   """
   def __init__(self, 
-                vocab_size,
+                char_vocab_size,
+                pinyin_vocab_size=None,
                 cnn_filters=[32, 32],
                 cnn_kernel_sizes=[[11, 41], [11, 21]],
                 cnn_strides=[[2, 2], [1, 2]],
@@ -35,9 +36,22 @@ class DeepSpeechConfig(object):
                 is_rnn_batch_norm=True,
                 is_rnn_bidirectional=True,
                 is_cnn_padding=True,
-                time_major=False):
+                time_major=False,
+                output_mode="char"):
 
-    self.vocab_size = vocab_size
+    self.char_vocab_size = char_vocab_size
+    self.pinyin_vocab_size = pinyin_vocab_size
+    self.output_mode = output_mode
+    if output_mode == "char":
+      self.vocab_size = self.char_vocab_size
+      tf.logging.info("*** output_mode ***")
+      tf.logging.info(output_mode)
+      tf.logging.info(self.vocab_size)
+    elif output_mode == "pinyin":
+      tf.logging.info("*** output_mode ***")
+      self.vocab_size = self.pinyin_vocab_size
+      tf.logging.info(output_mode)
+      tf.logging.info(self.vocab_size)
     self.cnn_filters = cnn_filters
     self.cnn_kernel_sizes = cnn_kernel_sizes
     self.cnn_strides = cnn_strides
@@ -63,10 +77,14 @@ class DeepSpeechConfig(object):
   @classmethod
   def from_dict(cls, json_object):
     """Constructs a `BertConfig` from a Python dictionary of parameters."""
-    config = DeepSpeechConfig(vocab_size=None)
+    config = DeepSpeechConfig(char_vocab_size=None)
     for (key, value) in six.iteritems(json_object):
       config.__dict__[key] = value
       print(key, value, '===model parameters===')
+    if config.__dict__['output_mode'] == 'char':
+      config.__dict__['vocab_size'] = config.__dict__['char_vocab_size']
+    elif config.__dict__['output_mode'] == "pinyin":
+      config.__dict__['vocab_size'] = config.__dict__['pinyin_vocab_size']
     return config
 
   @classmethod
@@ -95,6 +113,8 @@ class DeepSpeech(object):
               sequences_mask=None):
 
     config = copy.deepcopy(config)
+    for key in config.__dict__:
+      print(key, "==config==", config.__dict__[key])
 
     initializer = tf.truncated_normal_initializer(stddev=0.046875, dtype=tf.float32)
     regularizer = tf.contrib.layers.l2_regularizer(0.0046875)

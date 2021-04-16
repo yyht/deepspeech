@@ -164,15 +164,27 @@ def tokenize(input_text, input_pinyin_text, max_length=81):
   input_pinyin_ids = []
   input_token_ids = []
   for item in input_pinyin_tokens:
+    if pinyin_dict['pinyin2id'][item] == 0:
+      continue
     input_pinyin_ids.append(pinyin_dict['pinyin2id'][item])
   for item in input_tokens:
+    if char_dict['char2id'][item] == 0:
+      continue
     input_token_ids.append(char_dict['char2id'][item])
-  
+
   if len(input_pinyin_ids) > max_length or len(input_pinyin_ids) > max_length:
+    print("===max length===", input_text)
+    return "", ""
+
+  if len(input_pinyin_ids) == 0 or len(input_token_ids) == 0:
+    print("===zero length===", input_text)
     return "", ""
 
   input_token_ids += [0]*(max_length-len(input_token_ids))
   input_pinyin_ids += [0]*(max_length-len(input_pinyin_ids))
+  
+  assert max(input_token_ids) <= len(char_dict['char2id']) - 1
+  assert max(input_pinyin_ids) <= len(pinyin_dict['pinyin2id']) - 1
   return input_token_ids, input_pinyin_ids
 
 num_workers = len(FLAGS.worker_hosts.split(","))

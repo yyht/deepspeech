@@ -1,6 +1,6 @@
 {
-	"char_vocab_size": 4491,
-	"pinyin_vocab_size": null,
+	"char_vocab_size": 4362,
+	"pinyin_vocab_size": 1196,
 	"cnn_filters": [32, 32, 96],
 	"cnn_kernel_sizes": [[11, 41], [11, 21], [11, 21]],
 	"cnn_strides": [[2, 2], [2, 2], [1, 2]],
