@@ -255,7 +255,10 @@ def create_model(model_config,
                     blank_index=int(FLAGS.blank_index),
                     indices=unique_indices,
                     time_major=model_config.time_major)
-      loss = tf.reduce_mean(per_example_loss)
+      
+      valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
+      valid_loss_mask = tf.cast(valid_loss_mask, dtype=tf.float32)
+      loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
   else:
     per_example_loss = tf.zeros(logits_shape[0])
     loss = tf.reduce_mean(per_example_loss)

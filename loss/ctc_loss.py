@@ -94,7 +94,7 @@ def dense_ctc_loss(y_true, y_pred,
 
   print(indices, "===indices===")
   if blank_index < 0:
-    blank_index += _get_dim(logits, 2)
+    blank_index += _get_dim(y_pred, 2)
 
   tf.logging.info("** blank_index **")
   tf.logging.info(blank_index)
