@@ -25,7 +25,7 @@ nohup python ./run_wav2vec_conformer_tpu.py \
 	--circle_gamma 32 \
 	--audio_featurizer_config_path chinese_asr_v1/audio_featurizer_config.json \
 	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config.json \
-	-target_feature_mode linear \
+	--target_feature_mode linear \
 	--num_predict 150 \
 	--min_tok 10 \
 	--max_tok 10 \

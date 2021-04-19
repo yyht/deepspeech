@@ -1,19 +1,20 @@
-nohup python ./run_wav2vec_conformer_tpu.py \
+nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--buckets gs://yyht_source/pretrain \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v1.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_pretrain_v1_linear \
+	--output_dir chinese_asr_v1/conformer_pretrain_v1_linear_ctc_char \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 256 \
 	--learning_rate 3e-4 \
 	--num_train_steps 200000 \
 	--num_warmup_steps 2000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v1_linear/model.ckpt-200000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
 	--use_tpu True \
-	--tpu_name albert4 \
+	--tpu_name albert1 \
 	--num_tpu_cores 8 \
 	--eval_batch_size 256 \
 	--monitoring True \
@@ -26,10 +27,7 @@ nohup python ./run_wav2vec_conformer_tpu.py \
 	--audio_featurizer_config_path chinese_asr_v1/audio_featurizer_config.json \
 	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config.json \
 	--target_feature_mode linear \
-	--num_predict 150 \
-	--min_tok 10 \
-	--max_tok 10 \
-	--mask_prob 0.25 \
-	--is_pretraining true \
 	--monitoring true \
-	--transcript_seq_length 81
+	--transcript_seq_length 81 \
+	--blank_index "-1" \
+	--ctc_loss_type "dense_ctc"
