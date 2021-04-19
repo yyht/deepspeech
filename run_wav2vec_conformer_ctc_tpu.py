@@ -184,6 +184,9 @@ flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 flags.DEFINE_bool("is_global_bn", False, "Whether to use TPU or GPU/CPU.")
 flags.DEFINE_string("blank_index", "-1",
                      "How many steps to make in each estimator call.")
+flags.DEFINE_string(
+    "output_mode", "char",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
 
 def create_model(model_config, 
                 ipnut_features,
@@ -425,6 +428,7 @@ def input_fn_builder(input_file,
       "gender_id": tf.FixedLenFeature([], tf.int64),
       "dialect_id": tf.FixedLenFeature([], tf.int64),
       "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
+      "transcript_pinyin_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
     }
     batch_size = params["batch_size"]
     def _decode_record(record, name_to_features):
@@ -456,6 +460,13 @@ def input_fn_builder(input_file,
       # [T, D, 1] 
       output_examples = {}
 
+      if FLAGS.output_mode == 'char':
+        output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
+        tf.logging.info("*** apply char transcript_id ***")
+      elif FLAGS.output_mode == 'pinyin':
+        output_examples['transcript_id'] = tf.cast(example['transcript_pinyin_id'], dtype=tf.int32)
+        tf.logging.info("*** apply pinyin transcript_id ***")
+        
       output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
       output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
       output_examples['clean_aug_feature'] = tf.cast(clean_aug_feature, dtype=tf.float32)

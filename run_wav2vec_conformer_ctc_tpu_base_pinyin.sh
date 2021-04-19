@@ -30,4 +30,5 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--monitoring true \
 	--transcript_seq_length 81 \
 	--blank_index "-1" \
-	--ctc_loss_type "dense_ctc"
+	--ctc_loss_type "dense_ctc" \
+	--output_mode "pinyin"
