@@ -19,9 +19,9 @@ def check_tf_version():
   version = tf.__version__
   print("==tf version==", version)
   if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
-  return True
+    return True
   else:
-  return False
+    return False
 
 def sparse_ctc_loss(y_true, y_pred, input_length, 
           label_length, 
