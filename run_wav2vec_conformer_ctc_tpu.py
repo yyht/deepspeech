@@ -427,7 +427,7 @@ def input_fn_builder(input_file,
       "noise_id": tf.FixedLenFeature([], tf.int64),
       "gender_id": tf.FixedLenFeature([], tf.int64),
       "dialect_id": tf.FixedLenFeature([], tf.int64),
-      "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
+      "transcript_id": tf.FixedLenFeature([transcript_seq_length], tf.int64),
       "transcript_pinyin_id": tf.FixedLenFeature([transcript_seq_length], tf.int64)
     }
     batch_size = params["batch_size"]
@@ -466,7 +466,7 @@ def input_fn_builder(input_file,
       elif FLAGS.output_mode == 'pinyin':
         output_examples['transcript_id'] = tf.cast(example['transcript_pinyin_id'], dtype=tf.int32)
         tf.logging.info("*** apply pinyin transcript_id ***")
-        
+
       output_examples['clean_feature'] = tf.cast(clean_feature, dtype=tf.float32)
       output_examples['noise_feature'] = tf.cast(noise_feature, dtype=tf.float32)
       output_examples['clean_aug_feature'] = tf.cast(clean_aug_feature, dtype=tf.float32)
