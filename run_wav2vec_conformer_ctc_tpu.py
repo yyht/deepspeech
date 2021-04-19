@@ -369,8 +369,8 @@ def model_fn_builder(model_config,
           )
     
       hook_dict = {}
-      hook_dict['noise_loss'] = noise_loss
-      hook_dict['clean_loss'] = clean_loss
+      hook_dict['noise_loss'] = noise_aug_loss
+      hook_dict['clean_loss'] = clean_aug_loss
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
 
