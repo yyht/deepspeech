@@ -633,6 +633,7 @@ def main(_):
   model_fn = model_fn_builder(
       model_config=model_config,
       init_checkpoint=init_checkpoint,
+      ctc_loss_type=FLAGS.ctc_loss_type,
       learning_rate=FLAGS.learning_rate,
       num_train_steps=FLAGS.num_train_steps,
       num_warmup_steps=FLAGS.num_warmup_steps,
