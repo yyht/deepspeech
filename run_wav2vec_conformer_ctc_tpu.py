@@ -182,7 +182,8 @@ flags.DEFINE_integer(
 
 flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 flags.DEFINE_bool("is_global_bn", False, "Whether to use TPU or GPU/CPU.")
-
+flags.DEFINE_string("blank_index", "-1",
+                     "How many steps to make in each estimator call.")
 
 def create_model(model_config, 
                 ipnut_features,
@@ -233,7 +234,7 @@ def create_model(model_config,
                   reduced_length, 
                   label_length, 
                   time_major=model_config.time_major,
-                  blank_index=FLAGS.blank_index
+                  blank_index=int(FLAGS.blank_index)
                   )
 
       valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
@@ -251,7 +252,7 @@ def create_model(model_config,
                     logits, 
                     reduced_length, 
                     label_length, 
-                    blank_index=FLAGS.blank_index,
+                    blank_index=int(FLAGS.blank_index),
                     indices=unique_indices,
                     time_major=model_config.time_major)
       loss = tf.reduce_mean(per_example_loss)
