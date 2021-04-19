@@ -19,7 +19,7 @@ pai -name tensorflow1120
     -DgpuRequired=0
     -DmaxHungTimeBeforeGCInSeconds=0
     -DmaxTrainingTimeInHour=1440
-    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/deepspeech_params_reduced_length_large_export'
+    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/deepspeech_params_reduced_length_large_pinyin_export'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

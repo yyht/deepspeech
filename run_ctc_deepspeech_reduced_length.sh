@@ -20,7 +20,7 @@ pai -name tensorflow1120
     -DmaxTrainingTimeInHour=1440
     -DautoStrategy='false'
 	-Dcluster='{\"worker\":{\"count\":10, \"gpu\":100}}'
-    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/deepspeech_params_reduced_length_large'
+    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/deepspeech_params_reduced_length_large_pinyin'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

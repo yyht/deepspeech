@@ -188,7 +188,9 @@ def create_model(model_config,
       is_training=is_training,
       input_length=input_length,
       is_pretraining=False,
-      feature_mask=None)
+      time_feature_mask=None,
+      freq_feature_mask=None,
+      target_feature_mode='linear')
 
   logits = model.get_logits()
 
@@ -233,7 +235,8 @@ def model_fn_builder(model_config,
                 init_checkpoint,
                 audio_featurizer, 
                 beam_width=100,
-                top_paths=100):
+                top_paths=100,
+                blank_index=0):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -262,7 +265,8 @@ def model_fn_builder(model_config,
                 is_training,
                 beam_width=beam_width,
                 top_paths=top_paths,
-                input_length=feature_seq_length)
+                input_length=feature_seq_length,
+                blank_index=blank_index)
 
     tvars = tf.trainable_variables()
     initialized_variable_names = {}

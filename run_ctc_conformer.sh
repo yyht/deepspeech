@@ -22,7 +22,7 @@ pai -name tensorflow1120
     -DautoMixedPrecision=true
     -DenableTAO=true
 	-Dcluster='{\"worker\":{\"count\":10, \"gpu\":100}}'
-    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/conformer_params_reduced_length_medium_pinyin'
+    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/conformer_params_reduced_length_medium'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"
