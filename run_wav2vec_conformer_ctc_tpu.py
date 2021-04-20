@@ -21,7 +21,11 @@ from __future__ import print_function
 import collections
 import os
 from model import conformer 
-from optimizer.optimizer_utils import (create_optimizer, create_adam_optimizer, naive_create_optimizer)
+from optimizer.optimizer_utils import (
+    create_optimizer, 
+    create_adam_optimizer, 
+    naive_create_optimizer,
+    naive_create_optimizer_no_global)
 import tensorflow as tf
 from audio_io import audio_featurizer_tf, read_audio
 from augment_io import augment_tf
@@ -358,6 +362,19 @@ def model_fn_builder(model_config,
     if mode == tf.estimator.ModeKeys.TRAIN:
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
       print("==update_ops==", update_ops)
+      
+      encoder_params = []
+      for scope in ['conformer/conv_downsampling',
+                    'conformer/linear_proj',
+                    "conformer/encoder"]:
+        encoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+
+      decoder_params = []
+      for scope in ['conformer/fc_module',
+                    'conformer/cls']:
+        decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+
+      global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
 
         train_op, output_learning_rate = naive_create_optimizer(
@@ -368,7 +385,30 @@ def model_fn_builder(model_config,
           lr_decay_power=FLAGS.lr_decay_power,
           layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power
           )
-    
+
+        # encoder_train_op, encoder_lr = naive_create_optimizer_no_global(
+        #   total_loss, learning_rate, num_train_steps, 
+        #   weight_decay_rate=FLAGS.weight_decay_rate,
+        #   use_tpu=use_tpu,
+        #   warmup_steps=num_warmup_steps,
+        #   lr_decay_power=FLAGS.lr_decay_power,
+        #   layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+        #   tvars=encoder_params
+        #   )
+
+        # decoder_train_op, decode_lr = naive_create_optimizer_no_global(
+        #   total_loss, learning_rate, num_train_steps, 
+        #   weight_decay_rate=FLAGS.weight_decay_rate,
+        #   use_tpu=use_tpu,
+        #   warmup_steps=num_warmup_steps,
+        #   lr_decay_power=FLAGS.lr_decay_power,
+        #   layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+        #   tvars=decoder_params
+        #   )
+
+        # new_global_step = global_step + 1
+        # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+
       hook_dict = {}
       hook_dict['noise_loss'] = noise_aug_loss
       hook_dict['clean_loss'] = clean_aug_loss
