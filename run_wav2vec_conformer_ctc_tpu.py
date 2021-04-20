@@ -545,13 +545,13 @@ def input_fn_builder(input_file,
       if check_tf_version():
         [unique_labels, 
         unique_indices] = tf.nn.ctc_unique_labels(
-              tf.cast(tf.expand_dims(example['transcript_id'], axis=0), dtype=tf.int32)
+              tf.cast(tf.expand_dims(output_examples['transcript_id'], axis=0), dtype=tf.int32)
               )
         tf.logging.info("** apply original ctc unique labels **")
       else:
         [unique_labels, 
         unique_indices] = ctc_ops.ctc_unique_labels(
-                tf.cast(tf.expand_dims(example['transcript_id'], axis=0), dtype=tf.int32)
+                tf.cast(tf.expand_dims(output_examples['transcript_id'], axis=0), dtype=tf.int32)
                 )
         tf.logging.info("** apply re-implemented ctc unique labels **")
 
