@@ -520,20 +520,26 @@ def input_fn_builder(input_file,
       feature_shape = shape_list(clean_feature)
       # [T, V, 1]
       output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
-      [unique_labels, 
-      unique_indices] = ctc_ops.ctc_unique_labels_single(
-              tf.cast(example['transcript_id'], dtype=tf.int32)
-              )
-      indices_padded_values = unique_indices[-1]
+      # [unique_labels, 
+      # unique_indices] = ctc_ops.ctc_unique_labels_single(
+      #         tf.cast(example['transcript_id'], dtype=tf.int32)
+      #         )
+      # indices_padded_values = unique_indices[-1]
       
-      unique_label_shape = shape_list(unique_labels)
-      unique_indices_shape = shape_list(unique_indices)
+      # unique_label_shape = shape_list(unique_labels)
+      # unique_indices_shape = shape_list(unique_indices)
 
-      unique_labels = tf.expand_dims(unique_labels, axis=0)
-      unique_indices = tf.expand_dims(unique_indices, axis=0)
+      # unique_labels = tf.expand_dims(unique_labels, axis=0)
+      # unique_indices = tf.expand_dims(unique_indices, axis=0)
       
-      unique_labels = tf.pad(unique_labels, [[0,0],[0,transcript_seq_length-unique_label_shape[0]]])
-      unique_indices = tf.pad(unique_indices, [[0,0],[0,transcript_seq_length-unique_indices_shape[0]]], constant_values=indices_padded_values)
+      # unique_labels = tf.pad(unique_labels, [[0,0],[0,transcript_seq_length-unique_label_shape[0]]])
+      # unique_indices = tf.pad(unique_indices, [[0,0],[0,transcript_seq_length-unique_indices_shape[0]]], constant_values=indices_padded_values)
+      
+      [unique_labels, 
+      unique_indices] = ctc_ops.ctc_unique_labels(
+              tf.cast(tf.expand_dims(example['transcript_id'], axis=0), dtype=tf.int32)
+              )
+
       unique_labels = tf.squeeze(unique_labels, axis=0)
       unique_indices = tf.squeeze(unique_indices, axis=0)
 
