@@ -314,7 +314,8 @@ def model_fn_builder(model_config,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        unique_indices=None,
+        unique_indices=(features['unique_labels'],
+                        features['unique_indices']),
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
@@ -327,7 +328,8 @@ def model_fn_builder(model_config,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        unique_indices=None,
+        unique_indices=(features['unique_labels'],
+                        features['unique_indices']),
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
@@ -518,13 +520,25 @@ def input_fn_builder(input_file,
       feature_shape = shape_list(clean_feature)
       # [T, V, 1]
       output_examples['feature_seq_length'] = tf.cast(feature_shape[0], dtype=tf.int32)
-      # [unique_labels, 
-      # unique_indices] = ctc_ops.ctc_unique_labels_single(
-      #         tf.cast(example['transcript_id'], dtype=tf.int32)
-      #         )
+      [unique_labels, 
+      unique_indices] = ctc_ops.ctc_unique_labels_single(
+              tf.cast(example['transcript_id'], dtype=tf.int32)
+              )
+      indices_padded_values = unique_indices[-1]
+      
+      unique_label_shape = shape_list(unique_labels)
+      unique_indices_shape = shape_list(unique_indices)
 
-      # output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
-      # output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
+      unique_labels = tf.expand_dims(unique_labels, axis=0)
+      unique_indices = tf.expand_dims(unique_indices, axis=0)
+      
+      unique_labels = tf.pad(unique_labels, [[0,0],[0,transcript_seq_length-unique_label_shape[0]]])
+      unique_indices = tf.pad(unique_indices, [[0,0],[0,transcript_seq_length-unique_indices_shape[0]]], constant_values=indices_padded_values)
+      unique_labels = tf.squeeze(unique_labels, axis=0)
+      unique_indices = tf.squeeze(unique_indices, axis=0)
+
+      output_examples['unique_labels'] = tf.cast(unique_labels, dtype=tf.int32)
+      output_examples['unique_indices'] = tf.cast(unique_indices, dtype=tf.int32)
       
       reduced_length = audio_utils.get_reduced_length(feature_shape[0], audio_featurizer.get_reduced_factor())
 
@@ -581,8 +595,8 @@ def input_fn_builder(input_file,
                 "transcript_id":tf.TensorShape([transcript_seq_length]),
                 "gender_id":tf.TensorShape([]),
                 "dialect_id":tf.TensorShape([]),
-                # "unique_labels":tf.TensorShape([transcript_seq_length]),
-                # "unique_indices":tf.TensorShape([transcript_seq_length]),
+                "unique_labels":tf.TensorShape([transcript_seq_length]),
+                "unique_indices":tf.TensorShape([transcript_seq_length]),
                 "feature_seq_length":tf.TensorShape([]),
                 # "masked_positions":tf.TensorShape([num_predict]),
                 # "masked_weights":tf.TensorShape([num_predict]),
@@ -599,8 +613,8 @@ def input_fn_builder(input_file,
                 "transcript_id":0,
                 "gender_id":0,
                 "dialect_id":0,
-                # "unique_labels":0,
-                # "unique_indices":0,
+                "unique_labels":0,
+                "unique_indices":0,
                 "feature_seq_length":0,
                 # "masked_positions":0,
                 # "masked_weights":0.0,
