@@ -100,6 +100,11 @@ def dense_ctc_loss(y_true, y_pred,
   tf.logging.info(blank_index)
 
   if check_tf_version():
+    indices = tf.nn.ctc_unique_labels(
+        y_true, name=None
+    )
+    tf.logging.info("** ctc_unique_labels **")
+    tf.logging.info(indices)
     return tf.nn.ctc_loss_v2(
           labels=y_true, 
           logits=y_pred, 
@@ -110,12 +115,18 @@ def dense_ctc_loss(y_true, y_pred,
           blank_index=blank_index
         )
 
-  return ctc_ops.ctc_loss_v2(
-    labels=y_true,
-    logit_length=input_length,
-    logits=y_pred,
-    label_length=label_length,
-    logits_time_major=time_major,
-    unique=indices,
-    blank_index=blank_index
-  )
+  else:
+    indices = ctc_ops.ctc_unique_labels(
+          y_true, name=None
+    )
+    tf.logging.info("** ctc_unique_labels **")
+    tf.logging.info(indices)
+    return ctc_ops.ctc_loss_v2(
+      labels=y_true,
+      logit_length=input_length,
+      logits=y_pred,
+      label_length=label_length,
+      logits_time_major=time_major,
+      unique=indices,
+      blank_index=blank_index
+    )
