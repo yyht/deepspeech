@@ -441,6 +441,14 @@ def model_fn_builder(model_config,
 
   return model_fn
 
+def check_tf_version():
+  version = tf.__version__
+  print("==tf version==", version)
+  if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
+    return True
+  else:
+    return False
+
 # This function is not used by this file but is still used by the Colab and
 # people who depend on it.
 def input_fn_builder(input_file, 
@@ -535,10 +543,18 @@ def input_fn_builder(input_file,
       # unique_labels = tf.pad(unique_labels, [[0,0],[0,transcript_seq_length-unique_label_shape[0]]])
       # unique_indices = tf.pad(unique_indices, [[0,0],[0,transcript_seq_length-unique_indices_shape[0]]], constant_values=indices_padded_values)
       
-      [unique_labels, 
-      unique_indices] = ctc_ops.ctc_unique_labels(
+      if check_tf_version():
+        [unique_labels, 
+        unique_indices] = tf.nn.ctc_unique_labels(
               tf.cast(tf.expand_dims(example['transcript_id'], axis=0), dtype=tf.int32)
               )
+        tf.logging.info("** apply original ctc unique labels **")
+      else:
+        [unique_labels, 
+        unique_indices] = ctc_ops.ctc_unique_labels(
+                tf.cast(tf.expand_dims(example['transcript_id'], axis=0), dtype=tf.int32)
+                )
+        tf.logging.info("** apply re-implemented ctc unique labels **")
 
       unique_labels = tf.squeeze(unique_labels, axis=0)
       unique_indices = tf.squeeze(unique_indices, axis=0)
