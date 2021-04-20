@@ -136,8 +136,10 @@ class ConformerConfig(object):
       print(key, value, '===model parameters===')
     if config.__dict__['output_mode'] == 'char':
       config.__dict__['vocab_size'] = config.__dict__['char_vocab_size']
+      tf.logging.info("** output_mode is char **")
     elif config.__dict__['output_mode'] == "pinyin":
       config.__dict__['vocab_size'] = config.__dict__['pinyin_vocab_size']
+      tf.logging.info("** output_mode is pinyin **")
     return config
 
   @classmethod

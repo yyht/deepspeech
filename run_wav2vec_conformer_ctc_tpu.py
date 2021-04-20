@@ -522,7 +522,6 @@ def input_fn_builder(input_file,
       # output_examples['clean_audio'] = tf.cast(clean_audio, dtype=tf.float32)
       # output_examples['noise_audio'] = tf.cast(noise_audio, dtype=tf.float32)
       output_examples['speaker_id'] = tf.cast(example['speaker_id'], dtype=tf.int32)
-      # output_examples['transcript_id'] = tf.cast(example['transcript_id'], dtype=tf.int32)
       output_examples['gender_id'] = tf.cast(example['gender_id'], dtype=tf.int32)
       output_examples['dialect_id'] = tf.cast(example['dialect_id'], dtype=tf.int32)
       feature_shape = shape_list(clean_feature)
