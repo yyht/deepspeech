@@ -83,6 +83,9 @@ def dense_ctc_loss(y_true, y_pred,
   tf.logging.info("*** y_true ***")
   tf.logging.info(y_true)
 
+  tf.logging.info("*** time_major ***")
+  tf.logging.info(time_major)
+
   tf.logging.info("*** y_pred ***")
   tf.logging.info(y_pred)
 
