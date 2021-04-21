@@ -303,7 +303,7 @@ def model_fn_builder(model_config,
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-      print("==update_ops==", update_ops)
+      print("===update_ops==", update_ops)
       with tf.control_dependencies(update_ops):
         # train_op, output_learning_rate = create_optimizer(
         #     total_loss, learning_rate, num_train_steps, 
