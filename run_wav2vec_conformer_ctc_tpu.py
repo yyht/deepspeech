@@ -395,8 +395,7 @@ def model_fn_builder(model_config,
           warmup_steps=num_warmup_steps,
           lr_decay_power=FLAGS.lr_decay_power,
           layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-          tvars=encoder_params,
-          global_step_name='encoder'
+          tvars=encoder_params
           )
 
         [train_dec_op, 
