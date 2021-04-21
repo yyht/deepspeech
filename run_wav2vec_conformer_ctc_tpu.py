@@ -316,9 +316,8 @@ def model_fn_builder(model_config,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        # unique_indices=(features['unique_labels'],
-        #                 features['unique_indices']),
-        unique_indices=None,
+        unique_indices=(features['unique_labels'],
+                        features['unique_indices']),
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
@@ -331,9 +330,8 @@ def model_fn_builder(model_config,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        # unique_indices=(features['unique_labels'],
-        #                 features['unique_indices']),
-        unique_indices=None,
+        unique_indices=(features['unique_labels'],
+                        features['unique_indices']),
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
