@@ -263,8 +263,8 @@ def naive_create_adam_optimizer_no_global(
 
   optimizer = tf.train.AdamOptimizer(learning_rate,
                     beta1=0.9,
-                    beta2=0.999,
-                    epsilon=1e-6)
+                    beta2=0.98,
+                    epsilon=1e-9)
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
