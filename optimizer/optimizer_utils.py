@@ -188,7 +188,7 @@ def naive_create_optimizer(
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(
-      zip(grads, tvars), global_step=global_step)
+      zip(grads, tvars), global_step=None)
   new_global_step = global_step + 1
   train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
@@ -232,7 +232,7 @@ def naive_create_adam_optimizer(
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(
-      zip(grads, tvars), global_step=global_step)
+      zip(grads, tvars), global_step=None)
   new_global_step = global_step + 1
   train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
@@ -276,7 +276,7 @@ def naive_create_adam_optimizer_no_global(
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(
-      zip(grads, tvars), global_step=global_step)
+      zip(grads, tvars), global_step=None)
   return train_op, output_learning_rate
 
 def naive_create_optimizer_no_global(
@@ -317,7 +317,7 @@ def naive_create_optimizer_no_global(
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
   train_op = optimizer.apply_gradients(
-      zip(grads, tvars), global_step=global_step)
+      zip(grads, tvars), global_step=None)
   # new_global_step = global_step + 1
   # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
