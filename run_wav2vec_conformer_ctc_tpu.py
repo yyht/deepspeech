@@ -25,7 +25,9 @@ from optimizer.optimizer_utils import (
     create_optimizer, 
     create_adam_optimizer, 
     naive_create_optimizer,
-    naive_create_optimizer_no_global)
+    naive_create_adam_optimizer,
+    naive_create_optimizer_no_global,
+    naive_create_adam_optimizer_no_global)
 import tensorflow as tf
 from audio_io import audio_featurizer_tf, read_audio
 from augment_io import augment_tf
@@ -376,40 +378,41 @@ def model_fn_builder(model_config,
                     'conformer/cls']:
         decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
+      for params in encoder_params+decoder_params:
+        tf.logging.info("** params **")
+        tf.logging.info(params)
+
       global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
 
-        train_op, output_learning_rate = naive_create_optimizer(
-          total_loss, learning_rate, num_train_steps, 
+        [train_enc_op, 
+        enc_learning_rate] = naive_create_adam_optimizer_no_global(
+          total_loss, 
+          learning_rate, 
+          num_train_steps, 
           weight_decay_rate=FLAGS.weight_decay_rate,
           use_tpu=use_tpu,
           warmup_steps=num_warmup_steps,
           lr_decay_power=FLAGS.lr_decay_power,
-          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power
+          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+          tvars=encoder_params
           )
 
-        # encoder_train_op, encoder_lr = naive_create_optimizer_no_global(
-        #   total_loss, learning_rate, num_train_steps, 
-        #   weight_decay_rate=FLAGS.weight_decay_rate,
-        #   use_tpu=use_tpu,
-        #   warmup_steps=num_warmup_steps,
-        #   lr_decay_power=FLAGS.lr_decay_power,
-        #   layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-        #   tvars=encoder_params
-        #   )
+        [train_dec_op, 
+        dec_learning_rate] = naive_create_adam_optimizer_no_global(
+          total_loss, 
+          learning_rate*3, 
+          num_train_steps, 
+          weight_decay_rate=FLAGS.weight_decay_rate,
+          use_tpu=use_tpu,
+          warmup_steps=num_warmup_steps,
+          lr_decay_power=FLAGS.lr_decay_power,
+          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+          tvars=decoder_params
+          )
 
-        # decoder_train_op, decode_lr = naive_create_optimizer_no_global(
-        #   total_loss, learning_rate, num_train_steps, 
-        #   weight_decay_rate=FLAGS.weight_decay_rate,
-        #   use_tpu=use_tpu,
-        #   warmup_steps=num_warmup_steps,
-        #   lr_decay_power=FLAGS.lr_decay_power,
-        #   layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-        #   tvars=decoder_params
-        #   )
-
-        # new_global_step = global_step + 1
-        # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+        new_global_step = global_step + 1
+        train_op = tf.group([train_enc_op, train_dec_op, global_step.assign(new_global_step)])
 
       hook_dict = {}
       hook_dict['noise_loss'] = noise_aug_loss
@@ -417,7 +420,7 @@ def model_fn_builder(model_config,
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
 
-      hook_dict['learning_rate'] = output_learning_rate
+      # hook_dict['learning_rate'] = output_learning_rate
 
       if FLAGS.monitoring and hook_dict:
         host_call = log_utils.construct_scalar_host_call_v1(
