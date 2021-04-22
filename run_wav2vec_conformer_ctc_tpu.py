@@ -438,6 +438,13 @@ def model_fn_builder(model_config,
       hook_dict['noise_loss'] = noise_aug_loss
       hook_dict['clean_loss'] = clean_aug_loss
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
+      
+      tf.logging.info("*** reduced_length ***")
+      tf.logging.info(reduced_length)
+
+      tf.logging.info("*** clean_valid_loss_mask ***")
+      tf.logging.info(clean_valid_loss_mask)
+
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
       hook_dict['avg_valid_num'] = tf.reduce_mean(clean_valid_loss_mask)
 
