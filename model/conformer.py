@@ -661,8 +661,14 @@ def conformer_conv(inputs,
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
 
+  tf.logging.info("** outputs conv2d **")
+  tf.logging.info(outputs)
+
   # [batch, seq_len, 1, filters]
   outputs = glu(outputs, axis=-1)
+
+  tf.logging.info("** outputs glu **")
+  tf.logging.info(outputs)
 
   depthwise_filter = tf.get_variable("depthwise_filter",
                     (kernel_size, 1, input_dim, depth_multiplier),
