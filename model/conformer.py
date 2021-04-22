@@ -208,11 +208,16 @@ class Conformer(object):
                                   is_global_bn=is_global_bn)
 
         conv_subsampling_shape = get_shape_list(self.conv_subsampling, expected_rank=[4])
+        
+        tf.logging.info("*** conv down-sampling before merge last two dimensions ***")
+        tf.logging.info(self.conv_subsampling)
+        tf.logging.info(conv_subsampling_shape)
+
         self.conv_subsampling = tf.reshape(self.conv_subsampling, 
                   shape=[conv_subsampling_shape[0], -1, 
                   conv_subsampling_shape[2] * conv_subsampling_shape[3]])
 
-        tf.logging.info("*** conv down-sampling ***")
+        tf.logging.info("*** conv down-sampling after merge last two dimensions***")
         tf.logging.info(self.conv_subsampling)
 
       elif len(sequences_shape) == 3:
