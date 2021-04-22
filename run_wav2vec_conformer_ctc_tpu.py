@@ -27,7 +27,8 @@ from optimizer.optimizer_utils import (
     naive_create_optimizer,
     naive_create_adam_optimizer,
     naive_create_optimizer_no_global,
-    naive_create_adam_optimizer_no_global)
+    naive_create_adam_optimizer_no_global,
+    naive_create_adamax_optimizer)
 import tensorflow as tf
 from audio_io import audio_featurizer_tf, read_audio
 from augment_io import augment_tf
