@@ -22,9 +22,9 @@ def create_adam_optimizer(
       exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
 
@@ -73,9 +73,9 @@ def create_optimizer(
 
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
 
@@ -123,9 +123,9 @@ def create_optimizer_no_global_step(
 
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
 
@@ -182,9 +182,9 @@ def naive_create_optimizer(
 
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(
@@ -226,9 +226,9 @@ def naive_create_adam_optimizer(
 
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(
@@ -270,9 +270,9 @@ def naive_create_adam_optimizer_no_global(
 
   if not tvars:
     tvars = tf.trainable_variables()
-  for var in tvars:
-    tf.logging.info("** optimized vars **")
-    tf.logging.info(var)
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
   grads = tf.gradients(loss, tvars)
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
   train_op = optimizer.apply_gradients(

@@ -260,7 +260,10 @@ class Conformer(object):
                         self.conv_subsampling, 
                         units=config.ffm_hidden_size
                       )
+            self.code_dense = layer_norm(self.code_dense)
+
             self.code_loss_dict = {}
+            
             self.code_discrete = tf.identity(self.code_dense)
             self.code_book = tf.identity(self.code_dense)
 

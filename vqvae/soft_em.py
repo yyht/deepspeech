@@ -6,6 +6,11 @@ https://github.com/jaywalnut310/waveglow-vqvae
 https://github.com/HaebinShin/dec-tensorflow/blob/master/dec/model.py
 """
 
+def layer_norm(input_tensor, name=None):
+  """Run layer normalization on the last dimension of the tensor."""
+  return tf.contrib.layers.layer_norm(
+      inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+
 def shape_list(x, out_type=tf.int32):
   """Deal with dynamic shape in tensorflow cleanly."""
   static = x.shape.as_list()
@@ -103,6 +108,8 @@ def discrete_bottleneck(
     tf.logging.info("*** linear transformation to bottleneck_dims ***")
     x = tf.layers.dense(x, bottleneck_dims)
     x_shape = shape_list(x)
+
+  x = layer_norm(x)
 
   tf.logging.info("*** code_book ***")
   tf.logging.info(code_book)
