@@ -194,6 +194,7 @@ class Conformer(object):
       sequences_shape = get_shape_list(sequences, expected_rank=[3,4])
       if len(sequences_shape) == 4:
         tf.logging.info("*** specturm input ***")
+        tf.logging.info(sequences)
         # perform raw audio input
         with tf.variable_scope('conv_downsampling'):
           [self.conv_subsampling, 
@@ -668,9 +669,17 @@ def conformer_conv(inputs,
                     dtype=tf.float32,
                     initializer=tf.glorot_normal_initializer())
 
+  paddings = kernel_size // 2
+  outputs = tf.pad(
+        outputs,
+        [[0, 0], [paddings, paddings], [0, 0], [0, 0]])
+
+  tf.logging.info("** outputs padding **")
+  tf.logging.info(outputs)
+
   outputs = tf.nn.depthwise_conv2d(
     outputs, depthwise_filter, (1,1,1,1), 
-    "SAME"
+    "VALID"
   )
 
   outputs = batch_norm(outputs, is_training=is_training,
@@ -691,7 +700,10 @@ def conformer_conv(inputs,
                   kernel_initializer=tf.glorot_normal_initializer())
 
   # [batch, seq_len, 1, dims]
-  outputs = tf.squeeze(outputs, axis=2)
+  tf.logging.info("** outputs of conv **")
+  tf.logging.info(outputs)
+  # outputs = tf.squeeze(outputs, axis=2)
+  outputs = tf.reshape(outputs, input_shape)
 
   outputs = tf.nn.dropout(outputs, keep_prob=1-dropout_rate)
   return outputs
