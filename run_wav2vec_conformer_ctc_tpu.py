@@ -274,7 +274,8 @@ def create_model(model_config,
 
   audio_embedding = tf.identity(model.get_fc_output())
   
-  return (loss, per_example_loss, logits, audio_embedding)
+  return (loss, per_example_loss, logits, 
+        audio_embedding, valid_loss_mask)
 
 def model_fn_builder(model_config, 
                 init_checkpoint, 
@@ -310,28 +311,32 @@ def model_fn_builder(model_config,
     (clean_aug_loss, 
     clean_aug_per_example_loss, 
     clean_aug_logits,
-    clean_aug_audio_embedding) = create_model(
+    clean_aug_audio_embedding,
+    clean_valid_loss_mask) = create_model(
         model_config=model_config,
         ipnut_features=clean_aug_feature,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        unique_indices=(features['unique_labels'],
-                        features['unique_indices']),
+        # unique_indices=(features['unique_labels'],
+        #                 features['unique_indices']),
+        unique_indices=None,
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
     (noise_aug_loss, 
     noise_aug_per_example_loss, 
     noise_aug_logits,
-    noise_aug_audio_embedding) = create_model(
+    noise_aug_audio_embedding,
+    noise_valid_loss_mask) = create_model(
         model_config=model_config,
         ipnut_features=noise_aug_feature,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        unique_indices=(features['unique_labels'],
-                        features['unique_indices']),
+        # unique_indices=(features['unique_labels'],
+        #                 features['unique_indices']),
+        unique_indices=None,
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
@@ -401,7 +406,7 @@ def model_fn_builder(model_config,
         [train_dec_op, 
         dec_learning_rate] = naive_create_optimizer_no_global(
           total_loss, 
-          learning_rate*3, 
+          learning_rate, 
           num_train_steps, 
           weight_decay_rate=FLAGS.weight_decay_rate,
           use_tpu=use_tpu,
@@ -412,15 +417,18 @@ def model_fn_builder(model_config,
           )
 
         new_global_step = global_step + 1
-        train_op = tf.group([train_enc_op, train_dec_op, global_step.assign(new_global_step)])
+        with tf.control_dependencies([train_enc_op, train_dec_op]):
+          train_op = global_step.assign(new_global_step)
 
       hook_dict = {}
       hook_dict['noise_loss'] = noise_aug_loss
       hook_dict['clean_loss'] = clean_aug_loss
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
+      hook_dict['avg_valid_num'] = tf.reduce_mean(clean_valid_loss_mask)
 
-      # hook_dict['learning_rate'] = output_learning_rate
+      hook_dict['dec_learning_rate'] = dec_learning_rate
+      hook_dict['enc_learning_rate'] = enc_learning_rate
 
       if FLAGS.monitoring and hook_dict:
         host_call = log_utils.construct_scalar_host_call_v1(
