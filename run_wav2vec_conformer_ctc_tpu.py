@@ -235,6 +235,12 @@ def create_model(model_config,
   reduction_factor = model.get_conv_reduction_factor()
   reduced_length = audio_utils.get_reduced_length(input_length, reduction_factor)
 
+  tf.logging.info("*** reduced_length ***")
+  tf.logging.info(reduced_length)
+
+  tf.logging.info("*** label_length ***")
+  tf.logging.info(label_length)
+
   if if_calculate_loss:
     if ctc_loss_type == 'sparse_ctc':
       tf.logging.info("*** apply sparse ctc loss ***")
@@ -249,6 +255,9 @@ def create_model(model_config,
 
       valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
       valid_loss_mask = tf.cast(valid_loss_mask, dtype=tf.float32)
+
+      tf.logging.info("*** valid_loss_mask ***")
+      tf.logging.info(valid_loss_mask)
 
       if FLAGS.if_focal_ctc:
         tf.logging.info("*** apply sparse focal ctc loss ***")
@@ -268,6 +277,10 @@ def create_model(model_config,
       
       valid_loss_mask = tf.greater_equal(tf.cast(reduced_length, dtype=tf.float32), label_length)
       valid_loss_mask = tf.cast(valid_loss_mask, dtype=tf.float32)
+      
+      tf.logging.info("*** valid_loss_mask ***")
+      tf.logging.info(valid_loss_mask)
+
       loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
   else:
     per_example_loss = tf.zeros(logits_shape[0])
