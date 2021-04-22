@@ -751,7 +751,7 @@ def conv2d_bn_layer(inputs,
                   kernel_size=kernel_size, 
                   strides=strides,
                   padding="valid", 
-                  use_bias=False, 
+                  use_bias=not is_batch_norm, 
                   activation=None,
                   kernel_initializer=tf.glorot_normal_initializer())
   if is_batch_norm:
