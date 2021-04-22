@@ -228,6 +228,7 @@ def create_model(model_config,
 
   decoded = tf.to_int32(decoded_path[0])
   decoded_path = tf.sparse_tensor_to_dense(decoded)
+  decoded_path += 1
   
   return (decoded_path, log_probability, logits)
 

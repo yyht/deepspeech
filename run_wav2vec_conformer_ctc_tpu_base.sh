@@ -29,6 +29,6 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--target_feature_mode linear \
 	--monitoring true \
 	--transcript_seq_length 81 \
-	--blank_index "-1" \
+	--blank_index "0" \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char"
