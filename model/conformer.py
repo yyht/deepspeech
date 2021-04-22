@@ -606,7 +606,8 @@ def fc_layer(inputs, hidden_size,
   fc_intermediate_output = tf.layers.dense(inputs, 
                       units=hidden_size)
 
-  ffc_output = tf.nn.relu6(fc_intermediate_output)
+  # ffc_output = tf.nn.relu6(fc_intermediate_output)
+  ffc_output = tf.nn.swish(ffc_output)
   ffc_output = tf.nn.dropout(ffc_output, keep_prob=1-dropout_rate)
   return ffc_output
 
@@ -670,7 +671,8 @@ def conformer_conv(inputs,
   outputs = batch_norm(outputs, is_training=is_training,
                       is_global_bn=is_global_bn)
 
-  outputs = gelu(outputs)
+  # outputs = gelu(outputs)
+  outputs = tf.nn.swish(outputs)
 
   # [batch, seq_len, 1, dims]
   outputs = tf.layers.conv2d(
@@ -699,7 +701,8 @@ def residual_ffm_block(inputs, hidden_size,
   outputs = tf.layers.dense(inputs, 
                     units=expansion_factor*hidden_size
           )
-  outputs = gelu(outputs)
+  # outputs = gelu(outputs)
+  outputs = tf.nn.swish(outputs)
   outputs = tf.nn.dropout(outputs, keep_prob=1-dropout_rate)
   outputs = tf.layers.dense(outputs, 
                     units=input_shape[-1])
