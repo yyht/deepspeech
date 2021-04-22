@@ -319,7 +319,7 @@ def model_fn_builder(model_config,
         #     n_transformer_layers=model_config.num_hidden_layers,
         #     task_layers=[])
 
-        train_op, output_learning_rate = naive_create_adam_optimizer(
+        train_op, output_learning_rate = naive_create_optimizer(
           total_loss, learning_rate, num_train_steps, 
           weight_decay_rate=FLAGS.weight_decay_rate,
           use_tpu=use_tpu,
