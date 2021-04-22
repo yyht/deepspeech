@@ -607,7 +607,7 @@ def fc_layer(inputs, hidden_size,
                       units=hidden_size)
 
   # ffc_output = tf.nn.relu6(fc_intermediate_output)
-  ffc_output = tf.nn.swish(ffc_output)
+  ffc_output = tf.nn.swish(fc_intermediate_output)
   ffc_output = tf.nn.dropout(ffc_output, keep_prob=1-dropout_rate)
   return ffc_output
 
