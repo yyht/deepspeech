@@ -283,6 +283,9 @@ class Conformer(object):
                       self.conv_subsampling, 
                       units=config.ffm_hidden_size
                     )
+
+        self.linear_proj = layer_norm(self.linear_proj)
+
         self.linear_proj = tf.nn.dropout(self.linear_proj, 
                             keep_prob=1-config.proj_dropout)
 
@@ -382,6 +385,7 @@ class Conformer(object):
                       self.unmasked_conv_subsampling, 
                       units=self.config.ffm_hidden_size
                     )
+        linear_proj = layer_norm(linear_proj)
         return linear_proj
 
   def get_linear_proj_encoder(self, 
