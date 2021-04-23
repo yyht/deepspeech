@@ -270,7 +270,7 @@ def naive_create_adamax_optimizer(
   optimizer = AdamaxOptimizer(
       learning_rate=learning_rate, 
       beta1=0.9, 
-      beta2=0.999, 
+      beta2=0.98, 
       epsilon=1e-8, 
       clip_gradients = True, 
       clip_multiplier=1.2, 
@@ -408,6 +408,9 @@ def naive_create_optimizer_no_global(
       epsilon=1e-6,
       exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
       include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
+  
+  tf.logging.info("** apply adam weight decay **")
+
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
@@ -446,7 +449,7 @@ def naive_create_adamax_optimizer_no_global(
   optimizer = AdamaxOptimizer(
       learning_rate=learning_rate, 
       beta1=0.9, 
-      beta2=0.999, 
+      beta2=0.98, 
       epsilon=1e-8, 
       clip_gradients = True, 
       clip_multiplier=1.2, 

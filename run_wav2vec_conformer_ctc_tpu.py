@@ -417,6 +417,9 @@ def model_fn_builder(model_config,
         optimizer_fn = naive_create_adamax_optimizer_no_global
         tf.logging.info("** adamax **")
         tf.logging.info(optimizer_fn)
+      elif FLAGS.optimizer_type == 'adam_decay':
+        optimizer_fn = naive_create_optimizer_no_global
+        tf.logging.info(optimizer_fn)
         
       global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
