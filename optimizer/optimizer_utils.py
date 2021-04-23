@@ -219,9 +219,8 @@ def naive_create_adamax_optimizer(
                                    n_transformer_layers)
   optimizer = AdamaxOptimizer(
       learning_rate=learning_rate,
-      weight_decay_rate=weight_decay_rate,
-      beta_1=0.9,
-      beta_2=0.98,
+      beta1=0.9,
+      beta2=0.98,
       clip_gradients = True, 
       clip_multiplier=1.2, 
       clip_epsilon=1e-4)
@@ -394,9 +393,8 @@ def naive_create_adammax_optimizer_no_global(
                                    n_transformer_layers)
   optimizer = AdamaxOptimizer(
       learning_rate=learning_rate,
-      weight_decay_rate=weight_decay_rate,
-      beta_1=0.9,
-      beta_2=0.98,
+      beta1=0.9,
+      beta2=0.98,
       clip_gradients = True, 
       clip_multiplier=1.2, 
       clip_epsilon=1e-4)
