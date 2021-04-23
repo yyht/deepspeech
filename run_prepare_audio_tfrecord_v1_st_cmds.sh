@@ -16,7 +16,7 @@ pai -name tensorflow1120
     -project algo_public
     -Dscript='file://${model_zip}'
     -Dcluster='{\"worker\":{\"count\":10, \"gpu\":0, \"cpu\":100, \"memory\":16000}}'
-    -DentryFile='./deepspeech/prepare_audio_tfrecord_v1.py' 
+    -DentryFile='./deepspeech/prepare_audio_tfrecord_v2.py' 
     -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/prepare_st_cmds_tfrecord_params_v1'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com'
 ;

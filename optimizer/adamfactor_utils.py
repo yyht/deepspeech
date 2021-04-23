@@ -18,10 +18,28 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensor2tensor.layers import common_layers
 from tensor2tensor.utils import quantization
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
+
+def cast_like(x, y):
+  """Cast x to y's dtype, if necessary."""
+  x = tf.convert_to_tensor(x)
+  y = tf.convert_to_tensor(y)
+
+  if x.dtype.base_dtype == y.dtype.base_dtype:
+    return x
+
+  cast_x = tf.cast(x, y.dtype)
+  if cast_x.device != x.device:
+    x_name = "(eager Tensor)"
+    try:
+      x_name = x.name
+    except AttributeError:
+      pass
+    tf.logging.warning("Cast for %s may induce copy from '%s' to '%s'", x_name,
+                       x.device, cast_x.device)
+  return cast_x
 
 
 class AdafactorOptimizer(tf.train.Optimizer):
@@ -94,7 +112,6 @@ class AdafactorOptimizer(tf.train.Optimizer):
                beta1=0.0,
                clipping_threshold=1.0,
                factored=True,
-               simulated_quantize_bits=None,
                parameter_encoding=None,
                use_locking=False,
                name="Adafactor",
@@ -134,9 +151,6 @@ class AdafactorOptimizer(tf.train.Optimizer):
     self._beta1 = beta1
     self._clipping_threshold = clipping_threshold
     self._factored = factored
-    self._simulated_quantize_bits = simulated_quantize_bits
-    self._parameter_encoding = parameter_encoding
-    self._quantization_noise = quantization.noise_from_step_num()
     self._epsilon1 = epsilon1
     self._epsilon2 = epsilon2
 
@@ -196,8 +210,6 @@ class AdafactorOptimizer(tf.train.Optimizer):
     decay_rate = self._decay_rate
     update_scale = self._learning_rate
     old_val = var
-    if var.dtype.base_dtype == tf.bfloat16:
-      old_val = tf.to_float(self._parameter_encoding.decode(old_val))
     if self._multiply_by_parameter_scale:
       update_scale *= tf.to_float(self._parameter_scale(old_val))
     # HACK: Make things dependent on grad.
@@ -241,13 +253,7 @@ class AdafactorOptimizer(tf.train.Optimizer):
       new_m = common_layers.cast_like(new_m, var)
       updates.append(tf.assign(m, new_m, use_locking=self._use_locking))
     new_val = tf.to_float(old_val) - subtrahend
-    if var.dtype.base_dtype == tf.bfloat16:
-      new_val = self._parameter_encoding.encode(
-          new_val, self._quantization_noise)
-    if self._simulated_quantize_bits:
-      new_val = quantization.simulated_quantize(
-          var - subtrahend, self._simulated_quantize_bits,
-          self._quantization_noise)
+
     var_update = tf.assign(var, new_val, use_locking=self._use_locking)
     updates = [var_update] + updates
     return tf.group(*updates)
@@ -289,7 +295,15 @@ def step_num():
   return tf.to_float(tf.train.get_or_create_global_step())
 
 
-def adafactor_optimizer_from_hparams(hparams, lr):
+def adafactor_optimizer_from_hparams(lr,
+  optimizer_adafactor_decay_type='pow',
+  beta1=0.0,
+  beta2=0.999,
+  memory_exponent,
+  multiply_by_parameter_scale=True,
+  clipping_threshold=10.0,
+  factored=True
+  ):
   """Create an Adafactor optimizer based on model hparams.
   Args:
     hparams: model hyperparameters
@@ -299,32 +313,25 @@ def adafactor_optimizer_from_hparams(hparams, lr):
   Raises:
     ValueError: on illegal values
   """
-  if hparams.optimizer_adafactor_decay_type == "adam":
+  if optimizer_adafactor_decay_type == "adam":
     decay_rate = adafactor_decay_rate_adam(
-        hparams.optimizer_adafactor_beta2)
-  elif hparams.optimizer_adafactor_decay_type == "pow":
+        optimizer_adafactor_beta2)
+  elif optimizer_adafactor_decay_type == "pow":
     decay_rate = adafactor_decay_rate_pow(
-        hparams.optimizer_adafactor_memory_exponent)
+        optimizer_adafactor_memory_exponent)
   else:
     raise ValueError("unknown optimizer_adafactor_decay_type")
-  if hparams.weight_dtype == "bfloat16":
-    parameter_encoding = quantization.EighthPowerEncoding()
-  else:
-    parameter_encoding = None
+  
   return AdafactorOptimizer(
       multiply_by_parameter_scale=(
-          hparams.optimizer_adafactor_multiply_by_parameter_scale),
+          optimizer_adafactor_multiply_by_parameter_scale),
       learning_rate=lr,
       decay_rate=decay_rate,
-      beta1=hparams.optimizer_adafactor_beta1,
-      clipping_threshold=hparams.optimizer_adafactor_clipping_threshold,
-      factored=hparams.optimizer_adafactor_factored,
-      simulated_quantize_bits=getattr(
-          hparams, "simulated_parameter_quantize_bits", 0),
-      parameter_encoding=parameter_encoding,
+      beta1=optimizer_adafactor_beta1,
+      clipping_threshold=optimizer_adafactor_clipping_threshold,
+      factored=optimizer_adafactor_factored,
       use_locking=False,
       name="Adafactor")
-
 
 def reduce_rms(x):
   return tf.sqrt(tf.reduce_mean(tf.square(x)))

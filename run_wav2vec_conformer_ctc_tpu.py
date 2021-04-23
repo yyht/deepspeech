@@ -28,7 +28,8 @@ from optimizer.optimizer_utils import (
     naive_create_adam_optimizer,
     naive_create_optimizer_no_global,
     naive_create_adam_optimizer_no_global,
-    naive_create_adamax_optimizer)
+    naive_create_adamax_optimizer,
+    naive_create_adammax_optimizer_no_global)
 import tensorflow as tf
 from audio_io import audio_featurizer_tf, read_audio
 from augment_io import augment_tf
@@ -405,7 +406,7 @@ def model_fn_builder(model_config,
       with tf.control_dependencies(update_ops):
 
         [train_enc_op, 
-        enc_learning_rate] = naive_create_optimizer_no_global(
+        enc_learning_rate] = naive_create_adammax_optimizer_no_global(
           total_loss, 
           learning_rate, 
           num_train_steps, 
@@ -418,7 +419,7 @@ def model_fn_builder(model_config,
           )
 
         [train_dec_op, 
-        dec_learning_rate] = naive_create_optimizer_no_global(
+        dec_learning_rate] = naive_create_adammax_optimizer_no_global(
           total_loss, 
           learning_rate, 
           num_train_steps, 
