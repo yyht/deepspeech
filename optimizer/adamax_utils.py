@@ -80,32 +80,6 @@ class AdamaxOptimizer(optimizer.Optimizer):
       self._zeros_slot(v, "m", self._name)
       self._zeros_slot(v, "v", self._name)
 
-  def _apply_dense(self, grad, var):
-    lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
-    beta1_t = math_ops.cast(self._beta1_t, var.dtype.base_dtype)
-    beta2_t = math_ops.cast(self._beta2_t, var.dtype.base_dtype)
-    epsilon_t = math_ops.cast(self._epsilon_t, var.dtype.base_dtype)
-    clip_multiplier_t = math_ops.cast(self.clip_multiplier_t, var.dtype.base_dtype)
-    clip_epsilon_t = math_ops.cast(self.clip_epsilon_t, var.dtype.base_dtype)
-
-    v = self.get_slot(var, "v")
-    # clip gradient so that each value exceeds its previous maximum by no more than clip_multiplier
-    if self.clip_gradients:
-      clipVal = v * clip_multiplier_t + clip_epsilon_t
-      grad = clip_ops.clip_by_value(grad, -clipVal, clipVal)
-
-    # m := beta1 * m + (1 - beta1) * g_t
-
-    m = self.get_slot(var, "m")
-    m_t = state_ops.assign(m, beta1_t * m + (1. - beta1_t) * grad, use_locking=self._use_locking)
-    # v := max(beta2 * v , abs(grad))
-    v_t = state_ops.assign(v,math_ops.maximum(beta2_t * v, math_ops.abs(grad)), use_locking=self._use_locking)
-    # variable -= learning_rate * m_t / (epsilon_t + v_t)
-    # we do not use bias-correction term for the first moment; it does not give observable benefit
-    var_update = state_ops.assign_sub(var, lr_t * m_t / (v_t+epsilon_t), use_locking=self._use_locking)
-
-    return control_flow_ops.group(*[var_update, v_t, m_t])
-
   def _resource_apply_dense(self, grad, var):
     lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
     beta1_t = math_ops.cast(self._beta1_t, var.dtype.base_dtype)
@@ -132,8 +106,13 @@ class AdamaxOptimizer(optimizer.Optimizer):
 
     return control_flow_ops.group(*[var_update, v_t, m_t])
 
+  def _apply_dense(self, grad, var):
+    return self._resource_apply_dense(grad, var)
 
   def _apply_sparse(self, grad, var):
+    return self._resource_apply_sparse(grad, var)
+
+  def _resource_apply_sparse(self, grad, var):
     lr_t = math_ops.cast(self._lr_t, var.dtype.base_dtype)
     beta1_t = math_ops.cast(self._beta1_t, var.dtype.base_dtype)
     beta2_t = math_ops.cast(self._beta2_t, var.dtype.base_dtype)
