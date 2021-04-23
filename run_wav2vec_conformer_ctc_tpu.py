@@ -753,6 +753,8 @@ def main(_):
   featurizer_aug_config_path = os.path.join(FLAGS.buckets, FLAGS.featurizer_aug_config_path)
   with tf.gfile.Open(featurizer_aug_config_path, "r") as frobj:
     featurizer_aug_config = json.load(frobj)
+    tf.logging.info("** featurizer_aug_config **")
+    tf.logging.info(featurizer_aug_config)
   feature_augmenter = augment_tf.Augmentation(featurizer_aug_config, 
                                             use_tf=True)
 

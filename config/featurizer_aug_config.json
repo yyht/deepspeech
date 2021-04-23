@@ -2,12 +2,12 @@
 	"after":{
         "time_masking":{
             "num_masks": 5,
-            "mask_factor": 100,
+            "mask_factor": 50,
         "p_upperbound": 0.05
         },
         "freq_masking":{
             "num_masks": 1,
-            "mask_factor": 15
+            "mask_factor": 20
         }
     }
 }
