@@ -4,7 +4,7 @@ from tensorflow.python.framework import ops
 from optimizer.adam_weight_decay_utils import AdamWeightDecayOptimizer
 from optimizer.optimization import AdamWeightDecayOptimizer as NaiveAdamWeightDecayOptimizer
 from tensorflow.python.ops import control_flow_ops
-from optimizer.adammax_utils import AdamaxOptimizer
+from optimizer.adamfactor_utils import adafactor_optimizer
 
 def create_adam_optimizer(
     loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
@@ -194,7 +194,7 @@ def naive_create_optimizer(
   train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
 
-def naive_create_adamax_optimizer(
+def naive_create_adafactor_optimizer(
     loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
     warmup_steps=0, warmup_proportion=0, lr_decay_power=1.0,
     layerwise_lr_decay_power=-1, 
@@ -217,13 +217,15 @@ def naive_create_adamax_optimizer(
     print("==apply layerwise_lr_decay_power==")
     learning_rate = _get_layer_lrs(learning_rate, layerwise_lr_decay_power,
                                    n_transformer_layers)
-  optimizer = AdamaxOptimizer(
-      learning_rate=learning_rate,
-      beta1=0.9,
-      beta2=0.98,
-      clip_gradients = True, 
-      clip_multiplier=1.2, 
-      clip_epsilon=1e-4)
+  optimizer = adafactor_optimizer(
+      learning_rate,
+      decay_type='pow',
+      beta1=0.0,
+      beta2=0.999,
+      memory_exponent=0.8,
+      multiply_by_parameter_scale=True,
+      clipping_threshold=1.0,
+      factored=True)
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
@@ -369,7 +371,7 @@ def naive_create_optimizer_no_global(
   # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
 
-def naive_create_adammax_optimizer_no_global(
+def naive_create_adafactor_optimizer_no_global(
     loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
     warmup_steps=0, warmup_proportion=0, lr_decay_power=1.0,
     layerwise_lr_decay_power=-1, n_transformer_layers=None,
@@ -391,13 +393,15 @@ def naive_create_adammax_optimizer_no_global(
     print("==apply layerwise_lr_decay_power==")
     learning_rate = _get_layer_lrs(learning_rate, layerwise_lr_decay_power,
                                    n_transformer_layers)
-  optimizer = AdamaxOptimizer(
-      learning_rate=learning_rate,
-      beta1=0.9,
-      beta2=0.98,
-      clip_gradients = True, 
-      clip_multiplier=1.2, 
-      clip_epsilon=1e-4)
+  optimizer = adafactor_optimizer(
+      learning_rate,
+      decay_type='pow',
+      beta1=0.0,
+      beta2=0.999,
+      memory_exponent=0.8,
+      multiply_by_parameter_scale=True,
+      clipping_threshold=1.0,
+      factored=True)
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
