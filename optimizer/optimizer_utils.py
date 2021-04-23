@@ -4,7 +4,8 @@ from tensorflow.python.framework import ops
 from optimizer.adam_weight_decay_utils import AdamWeightDecayOptimizer
 from optimizer.optimization import AdamWeightDecayOptimizer as NaiveAdamWeightDecayOptimizer
 from tensorflow.python.ops import control_flow_ops
-from optimizer.adamfactor_utils import adafactor_optimizer
+from optimizer.adafactor_utils import adafactor_optimizer
+from optimizer.adamax_utils import AdamaxOptimizer
 
 def create_adam_optimizer(
     loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
@@ -226,6 +227,7 @@ def naive_create_adafactor_optimizer(
       multiply_by_parameter_scale=True,
       clipping_threshold=1.0,
       factored=True)
+  tf.logging.info("** apply adafactor **")
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
@@ -402,6 +404,7 @@ def naive_create_adafactor_optimizer_no_global(
       multiply_by_parameter_scale=True,
       clipping_threshold=1.0,
       factored=True)
+  tf.logging.info("** apply adafactor **")
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
