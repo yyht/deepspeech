@@ -28,6 +28,8 @@ from optimizer.optimizer_utils import (
     naive_create_adam_optimizer,
     naive_create_optimizer_no_global,
     naive_create_adam_optimizer_no_global,
+    naive_create_adamax_optimizer,
+    naive_create_adamax_optimizer_no_global,
     naive_create_adafactor_optimizer,
     naive_create_adafactor_optimizer_no_global)
 import tensorflow as tf
@@ -195,6 +197,11 @@ flags.DEFINE_string("blank_index", "-1",
 flags.DEFINE_string(
     "output_mode", "char",
     "Initial checkpoint (usually from a pre-trained BERT model).")
+
+flags.DEFINE_string(
+    "optimizer_type", "adafactor",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
+
 
 def create_model(model_config, 
                 ipnut_features,
@@ -402,11 +409,20 @@ def model_fn_builder(model_config,
         tf.logging.info("** params **")
         tf.logging.info(params)
 
+      if FLAGS.optimizer_type == 'adafactor':
+        optimizer_fn = naive_create_adafactor_optimizer_no_global
+        tf.logging.info("** adafactor **")
+        tf.logging.info(optimizer_fn)
+      elif FLAGS.optimizer_type == "adamax":
+        optimizer_fn = naive_create_adamax_optimizer_no_global
+        tf.logging.info("** adamax **")
+        tf.logging.info(optimizer_fn)
+        
       global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
 
         [train_enc_op, 
-        enc_learning_rate] = naive_create_adafactor_optimizer_no_global(
+        enc_learning_rate] = optimizer_fn(
           total_loss, 
           learning_rate, 
           num_train_steps, 
@@ -419,7 +435,7 @@ def model_fn_builder(model_config,
           )
 
         [train_dec_op, 
-        dec_learning_rate] = naive_create_adafactor_optimizer_no_global(
+        dec_learning_rate] = optimizer_fn(
           total_loss, 
           learning_rate, 
           num_train_steps, 

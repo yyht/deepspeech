@@ -244,6 +244,54 @@ def naive_create_adafactor_optimizer(
   train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op, output_learning_rate
 
+def naive_create_adamax_optimizer(
+    loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
+    warmup_steps=0, warmup_proportion=0, lr_decay_power=1.0,
+    layerwise_lr_decay_power=-1, 
+    n_transformer_layers=None,
+    tvars=[]):
+  """Creates an optimizer and training op."""
+  global_step = tf.train.get_or_create_global_step()
+  learning_rate = tf.train.polynomial_decay(
+      learning_rate,
+      global_step,
+      num_train_steps,
+      end_learning_rate=0.0,
+      power=lr_decay_power,
+      cycle=False)
+  warmup_steps = max(num_train_steps * warmup_proportion, warmup_steps)
+  learning_rate *= tf.minimum(
+      1.0, tf.cast(global_step, tf.float32) / tf.cast(warmup_steps, tf.float32))
+  output_learning_rate = tf.identity(learning_rate)
+  if layerwise_lr_decay_power > 0:
+    print("==apply layerwise_lr_decay_power==")
+    learning_rate = _get_layer_lrs(learning_rate, layerwise_lr_decay_power,
+                                   n_transformer_layers)
+  optimizer = AdamaxOptimizer(
+      learning_rate=learning_rate, 
+      beta1=0.9, 
+      beta2=0.999, 
+      epsilon=1e-8, 
+      clip_gradients = True, 
+      clip_multiplier=1.2, 
+      clip_epsilon=1e-4)
+  tf.logging.info("** apply adafactor **")
+  if use_tpu:
+    optimizer = tf.tpu.CrossShardOptimizer(optimizer)
+
+  if not tvars:
+    tvars = tf.trainable_variables()
+  # for var in tvars:
+  #   tf.logging.info("** optimized vars **")
+  #   tf.logging.info(var)
+  grads = tf.gradients(loss, tvars)
+  (grads, _) = tf.clip_by_global_norm(grads, clip_norm=10.0)
+  train_op = optimizer.apply_gradients(
+      zip(grads, tvars), global_step=None)
+  new_global_step = global_step + 1
+  train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+  return train_op, output_learning_rate
+
 def naive_create_adam_optimizer(
     loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
     warmup_steps=0, warmup_proportion=0, lr_decay_power=1.0,
@@ -360,6 +408,50 @@ def naive_create_optimizer_no_global(
       epsilon=1e-6,
       exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
       include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
+  if use_tpu:
+    optimizer = tf.tpu.CrossShardOptimizer(optimizer)
+
+  if not tvars:
+    tvars = tf.trainable_variables()
+  grads = tf.gradients(loss, tvars)
+  (grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
+  train_op = optimizer.apply_gradients(
+      zip(grads, tvars), global_step=None)
+  # new_global_step = global_step + 1
+  # train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+  return train_op, output_learning_rate
+
+def naive_create_adamax_optimizer_no_global(
+    loss, learning_rate, num_train_steps, weight_decay_rate=0.0, use_tpu=False,
+    warmup_steps=0, warmup_proportion=0, lr_decay_power=1.0,
+    layerwise_lr_decay_power=-1, n_transformer_layers=None,
+    tvars=[]):
+  """Creates an optimizer and training op."""
+  global_step = tf.train.get_or_create_global_step()
+  learning_rate = tf.train.polynomial_decay(
+      learning_rate,
+      global_step,
+      num_train_steps,
+      end_learning_rate=0.0,
+      power=lr_decay_power,
+      cycle=False)
+  warmup_steps = max(num_train_steps * warmup_proportion, warmup_steps)
+  learning_rate *= tf.minimum(
+      1.0, tf.cast(global_step, tf.float32) / tf.cast(warmup_steps, tf.float32))
+  output_learning_rate = tf.identity(learning_rate)
+  if layerwise_lr_decay_power > 0:
+    print("==apply layerwise_lr_decay_power==")
+    learning_rate = _get_layer_lrs(learning_rate, layerwise_lr_decay_power,
+                                   n_transformer_layers)
+  optimizer = AdamaxOptimizer(
+      learning_rate=learning_rate, 
+      beta1=0.9, 
+      beta2=0.999, 
+      epsilon=1e-8, 
+      clip_gradients = True, 
+      clip_multiplier=1.2, 
+      clip_epsilon=1e-4)
+  tf.logging.info("** apply adafactor **")
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
