@@ -35,11 +35,12 @@ class TFAugmentationExecutor:
 class Augmentation:
   def __init__(self, config = None, use_tf = False):
     if not config: config = {}
-    self.before = self.parse(config.pop("before", {}))
-    self.after = self.parse(config.pop("after", {}))
 
     tf.logging.info("** config **")
     tf.logging.info(config)
+
+    self.before = self.parse(config.pop("before", {}))
+    self.after = self.parse(config.pop("after", {}))
 
   @staticmethod
   def parse(config):
