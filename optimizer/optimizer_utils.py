@@ -275,7 +275,7 @@ def naive_create_adamax_optimizer(
       clip_gradients = True, 
       clip_multiplier=1.2, 
       clip_epsilon=1e-4)
-  tf.logging.info("** apply adafactor **")
+  tf.logging.info("** apply adamax **")
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
@@ -451,7 +451,7 @@ def naive_create_adamax_optimizer_no_global(
       clip_gradients = True, 
       clip_multiplier=1.2, 
       clip_epsilon=1e-4)
-  tf.logging.info("** apply adafactor **")
+  tf.logging.info("** apply adamax **")
   if use_tpu:
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
