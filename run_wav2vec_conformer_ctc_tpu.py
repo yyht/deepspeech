@@ -446,7 +446,7 @@ def model_fn_builder(model_config,
       tf.logging.info(clean_valid_loss_mask)
 
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
-      hook_dict['avg_valid_num'] = tf.reduce_mean(clean_valid_loss_mask)
+      hook_dict['avg_valid_num'] = tf.reduce_sum(clean_valid_loss_mask)
 
       hook_dict['dec_learning_rate'] = dec_learning_rate
       hook_dict['enc_learning_rate'] = enc_learning_rate

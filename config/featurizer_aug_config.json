@@ -1,13 +1,13 @@
 {
 	"after":{
         "time_masking":{
-            "num_masks": 10,
+            "num_masks": 5,
             "mask_factor": 100,
         "p_upperbound": 0.05
         },
         "freq_masking":{
             "num_masks": 1,
-            "mask_factor": 27
+            "mask_factor": 15
         }
     }
 }

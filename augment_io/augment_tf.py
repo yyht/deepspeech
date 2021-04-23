@@ -38,6 +38,9 @@ class Augmentation:
     self.before = self.parse(config.pop("before", {}))
     self.after = self.parse(config.pop("after", {}))
 
+    tf.logging.info("** config **")
+    tf.logging.info(config)
+
   @staticmethod
   def parse(config):
     augmentations = []
