@@ -289,7 +289,12 @@ def create_model(model_config,
       tf.logging.info("*** valid_loss_mask ***")
       tf.logging.info(valid_loss_mask)
 
-      loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
+      loss = tf.nn.compute_average_loss(
+        per_example_loss,
+        sample_weight=valid_loss_mask,
+        global_batch_size=None)
+
+      # loss = tf.reduce_sum(per_example_loss*valid_loss_mask)/(tf.reduce_sum(valid_loss_mask)+1e-10)
   else:
     per_example_loss = tf.zeros(logits_shape[0])
     loss = tf.reduce_mean(per_example_loss)
@@ -420,7 +425,7 @@ def model_fn_builder(model_config,
       elif FLAGS.optimizer_type == 'adam_decay':
         optimizer_fn = naive_create_optimizer_no_global
         tf.logging.info(optimizer_fn)
-        
+
       global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
 
