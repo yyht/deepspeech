@@ -18,6 +18,8 @@ def _get_dim(tensor, i):
 def check_tf_version():
   version = tf.__version__
   print("==tf version==", version)
+  tf.logging.info("** version **")
+  tf.logging.info(version)
   if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
     return True
   else:

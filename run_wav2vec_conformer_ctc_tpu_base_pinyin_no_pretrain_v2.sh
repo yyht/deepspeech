@@ -3,7 +3,7 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_pinyin.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_adam_decay_sparse \
+	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_adafactor \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
@@ -29,6 +29,6 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--monitoring true \
 	--transcript_seq_length 81 \
 	--blank_index "-1" \
-	--ctc_loss_type "sparse_ctc" \
+	--ctc_loss_type "dense_ctc" \
 	--output_mode "pinyin" \
-	--optimizer_type "adam_decay"
+	--optimizer_type "adafactor"
