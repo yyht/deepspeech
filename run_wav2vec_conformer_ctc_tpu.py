@@ -236,7 +236,7 @@ def create_model(model_config,
     tf.logging.info("*** apply reduced input length ***")
     input_length = tf.identity(input_length)
   else:
-    tf.logging.info("**** apply padded input length ***")
+    tf.logging.info("***** apply padded input length ***")
     logits_shape = shape_list(logits)
     input_length = logits_shape[1] * tf.ones_like(label_length)
 
