@@ -3,7 +3,8 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_char.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_char_adafactor \
+	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_char_adam_decay \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-172000 \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
@@ -31,4 +32,4 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--blank_index "-1" \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char" \
-	--optimizer_type "adafactor"
+	--optimizer_type "adam_decay"
