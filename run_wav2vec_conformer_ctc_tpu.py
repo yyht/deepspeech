@@ -397,7 +397,7 @@ def model_fn_builder(model_config,
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-      print("==update_ops==", update_ops)
+      print("===update_ops===", update_ops)
       
       encoder_params = []
       for scope in ['conformer/conv_downsampling',
