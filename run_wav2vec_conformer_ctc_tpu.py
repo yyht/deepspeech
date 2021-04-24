@@ -725,6 +725,9 @@ def main(_):
     init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
   else:
     init_checkpoint = None
+
+  tf.logging.info("** init_checkpoint **")
+  tf.logging.info(init_checkpoint)
   
   import os
   with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, config_name), "w") as fwobj:
