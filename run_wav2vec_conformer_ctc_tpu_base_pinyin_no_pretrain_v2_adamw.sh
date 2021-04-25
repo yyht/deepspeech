@@ -5,10 +5,10 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
 	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_adam_decay_v1 \
 	--max_seq_length 512 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-186000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-214000 \
 	--do_train True \
 	--train_batch_size 128 \
-	--learning_rate 2e-5 \
+	--learning_rate 5e-5 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
 	--save_checkpoints_steps 1000 \

@@ -375,6 +375,7 @@ class Conformer(object):
                     hidden_size=config.fc_hidden_size, 
                     dropout_rate=config.fc_dropout_rate,
                     is_training=is_training)
+          self.fc_output = layer_norm(self.fc_output)
 
         tf.logging.info("**** fc_output ****")
         tf.logging.info(self.fc_output)
