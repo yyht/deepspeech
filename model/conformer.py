@@ -380,23 +380,23 @@ class Conformer(object):
       tf.logging.info(self.conformer_block)
 
       if not is_pretraining:
+        with tf.variable_scope('fc_module'):
+          self.fc_output = fc_block(self.conformer_block[-1],
+                    fc_layers=config.fc_layers, 
+                    hidden_size=config.fc_hidden_size, 
+                    dropout_rate=config.fc_dropout_rate,
+                    is_training=is_training)
+          self.fc_output = layer_norm(self.fc_output)
         with tf.variable_scope('decoder'):
           if decoder_type == 'fc':
-            with tf.variable_scope('fc_module'):
-              self.decoder_output = fc_block(self.conformer_block[-1],
-                        fc_layers=config.fc_layers, 
-                        hidden_size=config.fc_hidden_size, 
-                        dropout_rate=config.fc_dropout_rate,
-                        is_training=is_training)
-              self.decoder_output = layer_norm(self.decoder_output)
-
             tf.logging.info("**** fc_output ****")
+            self.decoder_output = tf.identity(self.fc_output)
             tf.logging.info(self.decoder_output)
 
           elif decoder_type == 'rnn':
             rnn_cell = tf.nn.rnn_cell.LSTMCell
             with tf.variable_scope("rnn"):
-              self.decoder_output = rnn_block(self.conformer_block[-1], 
+              self.decoder_output = rnn_block(self.fc_output, 
                                 rnn_cell=rnn_cell, 
                                 rnn_hidden_size=config.rnn_hidden_size, 
                                 rnn_layers=config.rnn_layers,
