@@ -56,6 +56,11 @@ class ConformerConfig(object):
         fc_hidden_size=1,
         fc_dropout_rate=0.1,
 
+        rnn_hidden_size=512,
+        rnn_layers=1,
+        is_bidirectional=True,
+        is_rnn_batch_norm=False,
+
         bottleneck_size=384,
         bottleneck_dims=256,
 
@@ -113,6 +118,11 @@ class ConformerConfig(object):
     self.fc_hidden_size = fc_hidden_size
     self.fc_dropout_rate = fc_dropout_rate
 
+    self.rnn_hidden_size = rnn_hidden_size
+    self.rnn_layers = rnn_layers
+    self.is_bidirectional = is_bidirectional
+    self.is_rnn_batch_norm = is_rnn_batch_norm
+
     self.vqvae_beta = vqvae_beta
     self.vqvae_gamma = vqvae_gamma
 
@@ -169,7 +179,8 @@ class Conformer(object):
               time_feature_mask=None,
               freq_feature_mask=None,
               target_feature_mode='linear',
-              is_global_bn=False):
+              is_global_bn=False,
+              decoder_type="fc"):
 
     config = copy.deepcopy(config)
     self.config = copy.deepcopy(config)
@@ -369,24 +380,47 @@ class Conformer(object):
       tf.logging.info(self.conformer_block)
 
       if not is_pretraining:
-        with tf.variable_scope('fc_module'):
-          self.fc_output = fc_block(self.conformer_block[-1],
-                    fc_layers=config.fc_layers, 
-                    hidden_size=config.fc_hidden_size, 
-                    dropout_rate=config.fc_dropout_rate,
-                    is_training=is_training)
-          self.fc_output = layer_norm(self.fc_output)
+        if decoder_type == 'fc':
+          with tf.variable_scope('decoder'):
+            with tf.variable_scope('fc_module'):
+              self.fc_output = fc_block(self.conformer_block[-1],
+                        fc_layers=config.fc_layers, 
+                        hidden_size=config.fc_hidden_size, 
+                        dropout_rate=config.fc_dropout_rate,
+                        is_training=is_training)
+              self.fc_output = layer_norm(self.fc_output)
 
-        tf.logging.info("**** fc_output ****")
-        tf.logging.info(self.fc_output)
+            tf.logging.info("**** fc_output ****")
+            tf.logging.info(self.fc_output)
 
-        with tf.variable_scope('cls/predictions'):
-          self.logits = tf.layers.dense(self.fc_output, 
-                                  config.vocab_size, 
-                                  kernel_initializer=initializer)
+          with tf.variable_scope('cls/predictions'):
+            self.logits = tf.layers.dense(self.fc_output, 
+                                    config.vocab_size, 
+                                    kernel_initializer=initializer)
 
-          tf.logging.info("*** logits ***")
-          tf.logging.info(self.logits)
+            tf.logging.info("*** logits ***")
+            tf.logging.info(self.logits)
+        elif decoder_type == 'rnn':
+          rnn_cell = tf.nn.rnn_cell.LSTMCell
+          with tf.variable_scope('decoder'):
+            self.rnn_output = rnn_block(self.fc_output, 
+                              rnn_cell=rnn_cell, 
+                              rnn_hidden_size=config.rnn_hidden_size, 
+                              rnn_layers=config.rnn_layers,
+                              is_batch_norm=False if config.rnn_layers ==1 else config.is_rnn_batch_norm, 
+                              is_bidirectional=config.is_rnn_bidirectional, 
+                              is_training=is_training,
+                              time_major=config.time_major,
+                              sequence_length=reduced_length)
+            self.rnn_output = layer_norm(self.rnn_output)
+            
+          with tf.variable_scope('cls/predictions'):
+            self.logits = tf.layers.dense(self.rnn_output, 
+                                    config.vocab_size, 
+                                    kernel_initializer=initializer)
+
+            tf.logging.info("*** logits ***")
+            tf.logging.info(self.logits)
 
   def get_unmasked_linear_proj(self):
     with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
@@ -448,13 +482,6 @@ class Conformer(object):
             relative_position_type=self.config.mha_relative_position_type,
             is_training=is_training,
             is_global_bn=is_global_bn)
-      with tf.variable_scope('fc_module'):
-        fc_output = fc_block(conformer_block[-1],
-                  fc_layers=config.fc_layers, 
-                  hidden_size=config.fc_hidden_size, 
-                  dropout_rate=config.fc_dropout_rate,
-                  is_training=is_training)
-
       return conformer_block[-1], fc_output
 
   def get_conv_downsampling_output(self):
@@ -503,6 +530,88 @@ class Conformer(object):
       return self.code_loss_dict
     else:
       return None
+
+def rnn_layer(inputs, rnn_cell, 
+              rnn_hidden_size, 
+              is_batch_norm,
+              is_bidirectional,
+              sequence_length=None, 
+              is_training=False,
+              time_major=False):
+  
+  fw_cell = rnn_cell(num_units=rnn_hidden_size,
+                   name="forward")
+  bw_cell = rnn_cell(num_units=rnn_hidden_size,
+                   name="backward")
+
+  if is_bidirectional:
+    outputs, _ = tf.nn.bidirectional_dynamic_rnn(
+    cell_fw=fw_cell, cell_bw=bw_cell, inputs=inputs, dtype=tf.float32,
+    swap_memory=False,
+    sequence_length=sequence_length)
+    rnn_outputs = tf.concat(outputs, -1)
+  else:
+    rnn_outputs = tf.nn.dynamic_rnn(
+    fw_cell, inputs, dtype=tf.float32, swap_memory=False,
+    sequence_length=sequence_length)
+
+  if is_batch_norm:
+    rnn_outputs = sequecnce_batch_norm(rnn_outputs, time_major=time_major)
+  
+  return rnn_outputs
+
+def rnn_block(inputs, 
+              rnn_cell, 
+              rnn_hidden_size, 
+              rnn_layers, 
+              is_batch_norm,
+              is_bidirectional, 
+              sequence_length=None,
+              is_training=False,
+              time_major=False):
+
+  pre_output = inputs
+  with tf.variable_scope("rnn"):
+    for layer_idx in range(rnn_layers):
+      with tf.variable_scope("layer_%d" % layer_idx):
+        pre_output = rnn_layer(pre_output, 
+                  rnn_cell=rnn_cell, 
+                  rnn_hidden_size=rnn_hidden_size[layer_idx], 
+                  is_batch_norm=is_batch_norm,
+                  is_bidirectional=is_bidirectional, 
+                  is_training=is_training,
+                  time_major=time_major,
+                  sequence_length=sequence_length)
+  return pre_output
+
+def sequecnce_batch_norm(inputs, 
+                    time_major=False,
+                    variance_epsilon=1e-5):
+  input_shape = get_shape_list(inputs, expected_rank=[3])
+  beta = tf.get_variable(shape=[input_shape[-1]],
+                        name='beta', initializer=tf.zeros_initializer(),
+                        regularizer=None, constraint=None, trainable=True)
+  gamma = tf.get_variable(shape=[input_shape[-1]],
+                       name='gamma', initializer=tf.ones_initializer(),
+                       regularizer=None, constraint=None, trainable=True)
+  mean, variance = tf.nn.moments(inputs, axes=[0, 1], keep_dims=False)
+  if time_major:
+    total_padded_frames = tf.cast(input_shape[0], mean.dtype)
+    batch_size = tf.cast(input_shape[1], mean.dtype)
+  else:
+    total_padded_frames = tf.cast(input_shape[1], mean.dtype)
+    batch_size = tf.cast(input_shape[0], mean.dtype)
+  total_unpadded_frames_batch = tf.count_nonzero(
+            inputs, axis=[0, 1], keepdims=False,
+            dtype=mean.dtype
+        )
+  mean = (mean * total_padded_frames * batch_size) / total_unpadded_frames_batch
+  variance = (variance * total_padded_frames * batch_size) / total_unpadded_frames_batch
+  return tf.nn.batch_normalization(
+      inputs, mean=mean, variance=variance,
+      offset=beta, scale=gamma,
+      variance_epsilon=1e-8
+  )
 
 def conformer(inputs,
             ffm_hidden_size,

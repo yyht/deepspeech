@@ -202,6 +202,9 @@ flags.DEFINE_string(
     "optimizer_type", "adafactor",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
+flags.DEFINE_string(
+    "decoder_type", "fc",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
 
 def create_model(model_config, 
                 ipnut_features,
@@ -223,7 +226,8 @@ def create_model(model_config,
       time_feature_mask=time_feature_mask,
       freq_feature_mask=freq_feature_mask,
       target_feature_mode=FLAGS.target_feature_mode,
-      is_global_bn=FLAGS.is_global_bn)
+      is_global_bn=FLAGS.is_global_bn,
+      decoder_type=FLAGS.decoder_type)
 
   logits = model.get_logits()
 
@@ -406,7 +410,8 @@ def model_fn_builder(model_config,
         encoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       decoder_params = []
-      for scope in ['conformer/fc_module',
+      for scope in ['conformer/decoder'
+                    # 'conformer/fc_module',
                     'conformer/cls']:
         decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 

@@ -45,5 +45,11 @@
 	"num_hidden_layers": 12,
 
 	"time_major": false,
-	"output_mode": "pinyin"
+	"output_mode": "pinyin",
+
+	"rnn_hidden_size": 512,
+	"rnn_layers": 1,
+	"is_rnn_batch_norm": false,
+	"is_rnn_bidirectional": true
+
 }
