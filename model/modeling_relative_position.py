@@ -181,7 +181,11 @@ class BertModel(object):
     if token_type_ids is None:
       token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
-    with tf.variable_scope(scope, default_name="bert", reuse=tf.AUTO_REUSE):
+    if scope is None:
+      scope = 'bert'
+    tf.logging.info("** model scope **")
+    tf.logging.info(scope)
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
       with tf.variable_scope("embeddings"):
         # Perform embedding lookup on the word ids.
         if input_embeddings is not None:
@@ -202,14 +206,14 @@ class BertModel(object):
               word_embedding_name="word_embeddings",
               use_one_hot_embeddings=use_one_hot_embeddings)
 
-    with tf.variable_scope(scope, default_name="bert", reuse=tf.AUTO_REUSE):
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
       if self.embedding_output.shape[-1] != config.hidden_size:
         self.embedding_output = tf.layers.dense(
             self.embedding_output, config.hidden_size,
             name="embeddings_project")
         tf.logging.info("** apply embeddings project **")
 
-    with tf.variable_scope(scope, default_name="bert", reuse=tf.AUTO_REUSE):
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
       with tf.variable_scope("embeddings"):
         # Add positional embeddings and token type embeddings, then layer
         # normalize and perform dropout.
