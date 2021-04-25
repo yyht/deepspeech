@@ -1,4 +1,4 @@
-nohup python ./run_wav2vec_conformer_bert_base.py \
+nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--buckets gs://yyht_source/pretrain \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v1.json \
