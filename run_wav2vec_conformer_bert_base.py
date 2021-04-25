@@ -236,7 +236,12 @@ def get_masked_lm_output(bert_config,
       label_ids, 
       label_weights):
   """Get loss and log probs for the masked LM."""
-
+  input_tensor_shape = shape_list(input_tensor)
+  input_tensor = tf.reshape(input_tensor, [-1, input_tensor_shape[-1]])
+  
+  tf.logging.info("** input_tensor **")
+  tf.logging.info(input_tensor)
+  
   with tf.variable_scope("cls/predictions"):
     # We apply one more non-linear transformation before the output layer.
     # This matrix is not used after pre-training.
