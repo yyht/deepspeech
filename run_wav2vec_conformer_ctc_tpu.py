@@ -49,6 +49,16 @@ def shape_list(x, out_type=tf.int32):
   dynamic = tf.shape(x, out_type=out_type)
   return [dynamic[i] if s is None else s for i, s in enumerate(static)]
 
+def check_tf_version():
+  version = tf.__version__
+  print("==tf version==", version)
+  tf.logging.info("** version **")
+  tf.logging.info(version)
+  if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
+    return True
+  else:
+    return False
+
 flags = tf.flags
 
 FLAGS = flags.FLAGS
@@ -719,6 +729,8 @@ def main(_):
   tf.logging.set_verbosity(tf.logging.INFO)
   
   model_config = conformer.ConformerConfig.from_json_file(FLAGS.bert_config_file)
+
+  tf_version = check_tf_version()
 
   if int(FLAGS.blank_index) != 0:
     model_config.__dict__['vocab_size'] += 1
