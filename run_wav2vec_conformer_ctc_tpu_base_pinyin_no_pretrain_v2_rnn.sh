@@ -5,7 +5,7 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
 	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_adam_decay_rnn \
 	--max_seq_length 512 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-227000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-232000 \
 	--do_train True \
 	--train_batch_size 96 \
 	--learning_rate 5e-5 \

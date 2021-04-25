@@ -11,7 +11,7 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--learning_rate 1e-4 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v1_linear/model.ckpt-231000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-232000 \
 	--bert_lm_init_checkpoint models/bert_base_relative_t5_sinusoidal_50g_official/model.ckpt-1000000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
