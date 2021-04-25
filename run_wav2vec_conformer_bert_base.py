@@ -513,13 +513,15 @@ def model_fn_builder(model_config,
             tvars=am_params
             )
         else:
-          train_enc_op = tf.no_op()
+          train_enc_op = tf.no_op(learning_rate)
+          enc_learning_rate = tf.constant()
 
         if FLAGS.tune_mode in ['lm', 'all']:
+          dec_lr = learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0
           [train_dec_op, 
           dec_learning_rate] = optimizer_fn(
             total_loss, 
-            learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0, 
+            dec_lr, 
             num_train_steps, 
             weight_decay_rate=FLAGS.weight_decay_rate,
             use_tpu=use_tpu,
@@ -530,6 +532,7 @@ def model_fn_builder(model_config,
             )
         else:
           train_dec_op = tf.no_op()
+          dec_learning_rate = tf.constant(learning_rate)
 
         new_global_step = global_step + 1
         with tf.control_dependencies([train_enc_op, train_dec_op]):
