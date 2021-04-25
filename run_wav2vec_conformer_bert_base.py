@@ -348,11 +348,11 @@ def create_model(model_config,
     scope=None
     )
 
-  label_weights = tf.cast(tf.not_equal(input_transcripts, 0),
-                    dtype=tf.float32)
-  label_length = tf.reduce_sum(label_weights, axis=-1)
-
   padded_label_ids = tf.pad(input_transcripts, [[0,0], [0, sequence_output_shape[1]-FLAGS.transcript_seq_length]])
+
+  padded_label_weights = tf.cast(tf.not_equal(padded_label_ids, 0),
+                    dtype=tf.float32)
+  label_length = tf.reduce_sum(padded_label_weights, axis=-1)
 
   tf.logging.info("*** label_length ***")
   tf.logging.info(label_length)
@@ -364,7 +364,7 @@ def create_model(model_config,
          input_tensor=lm_bert.get_sequence_output(), 
          output_weights=lm_bert.get_embedding_table(),
          label_ids=tf.cast(padded_label_ids, dtype=tf.int32), 
-         label_weights=label_weights)
+         label_weights=padded_label_weights)
 
   return lm_loss, lm_example_loss, lm_log_probs
 
