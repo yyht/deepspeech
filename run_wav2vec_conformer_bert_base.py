@@ -454,7 +454,7 @@ def model_fn_builder(model_config,
       for item in var_checkpoint_dict_list:
         for key in item:
           print(key, item[key], '===========')
-      scaffold_fn = model_io_fn.load_multi_pretrained(
+      scaffold_fn = model_io.load_multi_pretrained(
                       var_checkpoint_dict_list,
                       use_tpu=True)
     else:
