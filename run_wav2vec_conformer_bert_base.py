@@ -221,6 +221,58 @@ flags.DEFINE_string(
     "bert_lm_config", "fc",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
+def get_masked_lm_output(bert_config, 
+      input_tensor,
+      label_ids, 
+      label_weights):
+  """Get loss and log probs for the masked LM."""
+
+  with tf.variable_scope("cls/predictions"):
+    # We apply one more non-linear transformation before the output layer.
+    # This matrix is not used after pre-training.
+    with tf.variable_scope("transform"):
+      input_tensor = tf.layers.dense(
+          input_tensor,
+          units=bert_config.hidden_size,
+          activation=modeling_relative_position.get_activation(bert_config.hidden_act),
+          kernel_initializer=modeling_relative_position.create_initializer(
+              bert_config.initializer_range))
+      input_tensor = modeling_relative_position.layer_norm(input_tensor)
+
+    # The output weights are the same as the input embeddings, but there is
+    # an output-only bias for each token.
+    output_bias = tf.get_variable(
+        "output_bias",
+        shape=[bert_config.vocab_size],
+        initializer=tf.zeros_initializer())
+    logits = tf.matmul(input_tensor, output_weights, transpose_b=True)
+    logits = tf.nn.bias_add(logits, output_bias)
+    log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+    label_ids = tf.reshape(label_ids, [-1])
+    label_weights = tf.reshape(label_weights, [-1])
+
+    one_hot_labels = tf.one_hot(
+        label_ids, depth=bert_config.vocab_size, dtype=tf.float32)
+
+    # The `positions` tensor might be zero-padded (if the sequence is too
+    # short to have the maximum number of predictions). The `label_weights`
+    # tensor has a value of 1.0 for every real prediction and 0.0 for the
+    # padding predictions.
+    per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+    numerator = tf.reduce_sum(label_weights * per_example_loss)
+    denominator = tf.reduce_sum(label_weights) + 1e-5
+    loss = numerator / denominator
+
+    print(log_probs, '==log_probs==')
+    print(label_ids, '==label_ids==')
+    print(label_weights, '==label_weights==')
+    print(per_example_loss, '==per_example_loss==')
+    print(loss, '==loss==')
+
+  return (loss, per_example_loss, log_probs)
+
+
 def create_model(model_config, 
                 ipnut_features,
                 is_training,
@@ -230,7 +282,8 @@ def create_model(model_config,
                 unique_indices=None,
                 input_length=None,
                 time_feature_mask=None,
-                freq_feature_mask=None):
+                freq_feature_mask=None,
+                bert_config={}):
   """Creates a classification model."""
   model = conformer.Conformer(
       config=model_config,
@@ -264,7 +317,21 @@ def create_model(model_config,
   tf.logging.info("*** label_length ***")
   tf.logging.info(label_length)
 
-  
+  sequence_output_shape = shape_list(sequence_output)
+
+  sequence_mask = tf.sequence_mask(reduced_length, sequence_output_shape[1])
+  sequence_mask = tf.cast(sequence_mask, dtype=tf.float32)
+
+  lm_bert = modeling_relative_position.BertModel(
+    config=bert_config,
+    is_training=is_training,
+    input_ids=None,
+    input_mask=sequence_mask,
+    token_type_ids=None,
+    use_one_hot_embeddings=False,
+    input_embeddings=sequence_output,
+    scope=None
+    )
 
 def model_fn_builder(model_config, 
                 init_checkpoint, 
