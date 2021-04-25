@@ -33,4 +33,4 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char" \
 	--optimizer_type "adam_decay" \
-	--decoder_type "rnn"
+	--decoder_type "fc"
