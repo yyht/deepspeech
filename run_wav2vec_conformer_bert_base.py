@@ -512,6 +512,8 @@ def model_fn_builder(model_config,
             layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
             tvars=am_params
             )
+        else:
+          train_enc_op = tf.no_op()
 
         if FLAGS.tune_mode in ['lm', 'all']:
           [train_dec_op, 
@@ -526,6 +528,8 @@ def model_fn_builder(model_config,
             layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
             tvars=lm_params
             )
+        else:
+          train_dec_op = tf.no_op()
 
         new_global_step = global_step + 1
         with tf.control_dependencies([train_enc_op, train_dec_op]):
