@@ -324,9 +324,6 @@ def create_model(model_config,
   tf.logging.info("*** reduced_length ***")
   tf.logging.info(reduced_length)
 
-  tf.logging.info("*** label_length ***")
-  tf.logging.info(label_length)
-
   sequence_output_shape = shape_list(sequence_output)
 
   sequence_mask = tf.sequence_mask(reduced_length, sequence_output_shape[1])
@@ -348,6 +345,10 @@ def create_model(model_config,
 
   label_weights = tf.cast(tf.not_equal(input_transcripts, 0),
                     dtype=tf.float32)
+  label_length = tf.reduce_sum(label_weights, axis=-1)
+
+  tf.logging.info("*** label_length ***")
+  tf.logging.info(label_length)
 
   (lm_loss,
     lm_example_loss, 
