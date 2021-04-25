@@ -30,7 +30,7 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config.json \
 	--target_feature_mode linear \
 	--monitoring true \
-	--transcript_seq_length 81 \
+	--transcript_seq_length 128 \
 	--blank_index "0" \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char" \
