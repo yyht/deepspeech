@@ -409,14 +409,18 @@ def model_fn_builder(model_config,
                     "conformer/encoder"]:
         encoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
+      for params in encoder_params:
+        tf.logging.info("** encoder_params **")
+        tf.logging.info(params)
+
       decoder_params = []
       for scope in ['conformer/fc_module'
                     'conformer/decoder',
                     'conformer/cls']:
         decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
-      for params in encoder_params+decoder_params:
-        tf.logging.info("** params **")
+      for params in decoder_params:
+        tf.logging.info("** decoder_params **")
         tf.logging.info(params)
 
       if FLAGS.optimizer_type == 'adafactor':
