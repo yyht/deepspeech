@@ -223,6 +223,7 @@ flags.DEFINE_string(
 
 def get_masked_lm_output(bert_config, 
       input_tensor,
+      output_weights,
       label_ids, 
       label_weights):
   """Get loss and log probs for the masked LM."""
@@ -332,6 +333,20 @@ def create_model(model_config,
     input_embeddings=sequence_output,
     scope=None
     )
+
+  label_weights = tf.cast(tf.not_equal(input_transcripts, 0),
+                    dtype=tf.float32)
+
+  (masked_lm_loss,
+    masked_lm_example_loss, 
+    masked_lm_log_probs) = get_masked_lm_output(
+         bert_config=bert_config, 
+         input_tensor=lm_bert.get_sequence_output(), 
+         output_weights=lm_bert.get_embedding_table(),
+         label_ids=input_transcripts, 
+         label_weights=label_weights)
+
+  return 
 
 def model_fn_builder(model_config, 
                 init_checkpoint, 

@@ -181,7 +181,11 @@ class BertModel(object):
         # Perform embedding lookup on the word ids.
         if input_embeddings is not None:
           self.embedding_output = tf.identity(input_embeddings)
-          self.embedding_table = None
+          self.embedding_table = tf.get_variable(
+                name="word_embeddings",
+                shape=[config.vocab_size, config.hidden_size],
+                initializer=create_initializer(config.initializer_range))
+
           tf.logging.info("** using input-embeddings from outside **")
         else:
           tf.logging.info("** using input-embeddings from input-ids **")
