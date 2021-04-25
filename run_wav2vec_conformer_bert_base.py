@@ -43,6 +43,7 @@ from augment_io import span_mask
 from loss import circle_loss_utils
 from utils import log_utils
 from model import modeling_relative_position  
+from utils import model_io
 
 def shape_list(x, out_type=tf.int32):
   """Deal with dynamic shape in tensorflow cleanly."""
@@ -221,6 +222,15 @@ flags.DEFINE_string(
     "bert_lm_config", "fc",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
+flags.DEFINE_string(
+    "bert_lm_init_checkpoint", "fc",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
+
+flags.DEFINE_string(
+    "tune_mode", "am",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
+
+
 def get_masked_lm_output(bert_config, 
       input_tensor,
       output_weights,
@@ -323,6 +333,9 @@ def create_model(model_config,
   sequence_mask = tf.sequence_mask(reduced_length, sequence_output_shape[1])
   sequence_mask = tf.cast(sequence_mask, dtype=tf.float32)
 
+  tf.logging.info("** sequence_mask **")
+  tf.logging.info(sequence_mask)
+
   lm_bert = modeling_relative_position.BertModel(
     config=bert_config,
     is_training=is_training,
@@ -337,16 +350,16 @@ def create_model(model_config,
   label_weights = tf.cast(tf.not_equal(input_transcripts, 0),
                     dtype=tf.float32)
 
-  (masked_lm_loss,
-    masked_lm_example_loss, 
-    masked_lm_log_probs) = get_masked_lm_output(
+  (lm_loss,
+    lm_example_loss, 
+    lm_log_probs) = get_masked_lm_output(
          bert_config=bert_config, 
          input_tensor=lm_bert.get_sequence_output(), 
          output_weights=lm_bert.get_embedding_table(),
          label_ids=input_transcripts, 
          label_weights=label_weights)
 
-  return 
+  return lm_loss, lm_example_loss, lm_log_probs
 
 def model_fn_builder(model_config, 
                 init_checkpoint, 
@@ -356,7 +369,9 @@ def model_fn_builder(model_config,
                 num_warmup_steps,
                 output_dir,
                 use_tpu,
-                reduced_factor):
+                reduced_factor,
+                bert_config={},
+                bert_init_checkpoint=None):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -379,88 +394,87 @@ def model_fn_builder(model_config,
     
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-    (clean_aug_loss, 
-    clean_aug_per_example_loss, 
-    clean_aug_logits,
-    clean_aug_audio_embedding,
-    clean_valid_loss_mask) = create_model(
+    (clean_lm_loss, 
+      clean_example_loss, 
+      clean_lm_log_probs) = create_model(
         model_config=model_config,
         ipnut_features=clean_aug_feature,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        # unique_indices=(features['unique_labels'],
-        #                 features['unique_indices']),
         unique_indices=None,
         if_calculate_loss=True,
-        input_length=feature_seq_length)
+        input_length=feature_seq_length,
+        bert_config=bert_config)
 
-    (noise_aug_loss, 
-    noise_aug_per_example_loss, 
-    noise_aug_logits,
-    noise_aug_audio_embedding,
-    noise_valid_loss_mask) = create_model(
+    (noise_lm_loss, 
+    noise_example_loss, 
+    noise_lm_log_probs) = create_model(
         model_config=model_config,
         ipnut_features=noise_aug_feature,
         input_transcripts=transcript_id,
         is_training=is_training,
         ctc_loss_type=ctc_loss_type,
-        # unique_indices=(features['unique_labels'],
-        #                 features['unique_indices']),
         unique_indices=None,
         if_calculate_loss=True,
-        input_length=feature_seq_length)
+        input_length=feature_seq_length,
+        bert_config=bert_config)
 
-    total_loss = (clean_aug_loss + noise_aug_loss)
+    total_loss = (clean_lm_loss + noise_lm_loss)
     # total_loss = (noise_loss + clean_loss)
     total_loss = total_loss / 2.0
 
-    tvars = tf.trainable_variables()
-    initialized_variable_names = {}
-    scaffold_fn = None
-    if init_checkpoint:
-      (assignment_map, initialized_variable_names
-      ) = conformer.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
-      if use_tpu:
-        def tpu_scaffold():
-          tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-          return tf.train.Scaffold()
-
-        scaffold_fn = tpu_scaffold
-      else:
-        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-
-    tf.logging.info("**** Trainable Variables ****")
-    for var in tvars:
-      init_string = ""
-      if var.name in initialized_variable_names:
-        init_string = ", *INIT_FROM_CKPT*"
-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
-                      init_string)
+    var_checkpoint_dict_list = []
+    am_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "conformer")
+    am_dict = {
+      "tvars":am_params,
+      "init_checkpoint":init_checkpoint,
+      "exclude_scope":"",
+      "restore_var_name":[]
+    }
+    var_checkpoint_dict_list.append(am_dict)
+    lm_params = []
+    lm_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "bert")
+    lm_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "cls/predictions")
+    lm_dict = {
+          "tvars":lm_params,
+          "init_checkpoint":bert_init_checkpoint,
+          "exclude_scope":"",
+          "restore_var_name":[]
+    }
+    var_checkpoint_dict_list.append(lm_dict)
+    if var_checkpoint_dict_list:
+      for item in var_checkpoint_dict_list:
+        for key in item:
+          print(key, item[key], '===========')
+      scaffold_fn = model_io_fn.load_multi_pretrained(
+                      var_checkpoint_dict_list,
+                      use_tpu=True)
+    else:
+      scaffold_fn = None
 
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
       print("===update_ops===", update_ops)
       
-      encoder_params = []
+      am_params = []
       for scope in ['conformer/conv_downsampling',
                     'conformer/linear_proj',
                     "conformer/encoder"]:
-        encoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+        am_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
-      for params in encoder_params:
-        tf.logging.info("** encoder_params **")
+      for params in am_params:
+        tf.logging.info("** am_params **")
         tf.logging.info(params)
 
-      decoder_params = []
-      for scope in ['conformer/fc_module',
-                    'conformer/decoder',
-                    'conformer/cls']:
-        decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+      lm_params = []
+      for scope in ['bert',
+                    'cls/predictions']:
+        lm_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
-      for params in decoder_params:
-        tf.logging.info("** decoder_params **")
+      for params in lm_params:
+        tf.logging.info("** lm_params **")
         tf.logging.info(params)
 
       if FLAGS.optimizer_type == 'adafactor':
@@ -478,39 +492,41 @@ def model_fn_builder(model_config,
       global_step = tf.train.get_or_create_global_step()
       with tf.control_dependencies(update_ops):
 
-        [train_enc_op, 
-        enc_learning_rate] = optimizer_fn(
-          total_loss, 
-          learning_rate, 
-          num_train_steps, 
-          weight_decay_rate=FLAGS.weight_decay_rate,
-          use_tpu=use_tpu,
-          warmup_steps=num_warmup_steps,
-          lr_decay_power=FLAGS.lr_decay_power,
-          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-          tvars=encoder_params
-          )
+        if FLAGS.tune_mode in ['am', 'all']:
+          [train_enc_op, 
+          enc_learning_rate] = optimizer_fn(
+            total_loss, 
+            learning_rate, 
+            num_train_steps, 
+            weight_decay_rate=FLAGS.weight_decay_rate,
+            use_tpu=use_tpu,
+            warmup_steps=num_warmup_steps,
+            lr_decay_power=FLAGS.lr_decay_power,
+            layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+            tvars=am_params
+            )
 
-        [train_dec_op, 
-        dec_learning_rate] = optimizer_fn(
-          total_loss, 
-          learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0, 
-          num_train_steps, 
-          weight_decay_rate=FLAGS.weight_decay_rate,
-          use_tpu=use_tpu,
-          warmup_steps=num_warmup_steps,
-          lr_decay_power=FLAGS.lr_decay_power,
-          layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
-          tvars=decoder_params
-          )
+        if FLAGS.tune_mode in ['lm', 'all']:
+          [train_dec_op, 
+          dec_learning_rate] = optimizer_fn(
+            total_loss, 
+            learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0, 
+            num_train_steps, 
+            weight_decay_rate=FLAGS.weight_decay_rate,
+            use_tpu=use_tpu,
+            warmup_steps=num_warmup_steps,
+            lr_decay_power=FLAGS.lr_decay_power,
+            layerwise_lr_decay_power=FLAGS.layerwise_lr_decay_power,
+            tvars=lm_params
+            )
 
         new_global_step = global_step + 1
         with tf.control_dependencies([train_enc_op, train_dec_op]):
           train_op = global_step.assign(new_global_step)
 
       hook_dict = {}
-      hook_dict['noise_loss'] = noise_aug_loss
-      hook_dict['clean_loss'] = clean_aug_loss
+      hook_dict['noise_loss'] = noise_lm_loss
+      hook_dict['clean_loss'] = clean_lm_loss
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       
       tf.logging.info("*** reduced_length ***")
@@ -522,8 +538,8 @@ def model_fn_builder(model_config,
       hook_dict['seq_length'] = tf.reduce_mean(reduced_length)
       hook_dict['avg_valid_num'] = tf.reduce_sum(clean_valid_loss_mask)
 
-      hook_dict['dec_learning_rate'] = dec_learning_rate
-      hook_dict['enc_learning_rate'] = enc_learning_rate
+      hook_dict['lm_learning_rate'] = dec_learning_rate
+      hook_dict['am_learning_rate'] = enc_learning_rate
 
       if FLAGS.monitoring and hook_dict:
         host_call = log_utils.construct_scalar_host_call_v1(
@@ -760,12 +776,9 @@ def main(_):
   
   model_config = conformer.ConformerConfig.from_json_file(FLAGS.bert_config_file)
 
-  tf_version = check_tf_version()
+  lm_model_config = modeling_relative_position.BertConfig.from_json_file(FLAGS.bert_lm_config)
 
-  if int(FLAGS.blank_index) != 0:
-    model_config.__dict__['vocab_size'] += 1
-    tf.logging.info("** blank_index is added to the vocab-size")
-    tf.logging.info(model_config.__dict__['vocab_size'])
+  tf_version = check_tf_version()
 
   config_name = FLAGS.bert_config_file.split("/")[-1]
   import os
@@ -777,8 +790,16 @@ def main(_):
   else:
     init_checkpoint = None
 
-  tf.logging.info("** init_checkpoint **")
+  if FLAGS.bert_lm_init_checkpoint:
+    lm_init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.bert_lm_init_checkpoint)
+  else:
+    lm_init_checkpoint = None
+
+  tf.logging.info("** am init_checkpoint **")
   tf.logging.info(init_checkpoint)
+
+  tf.logging.info("** lm init_checkpoint **")
+  tf.logging.info(lm_init_checkpoint)
   
   import os
   with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, config_name), "w") as fwobj:
@@ -846,7 +867,9 @@ def main(_):
       num_warmup_steps=FLAGS.num_warmup_steps,
       output_dir=output_dir,
       use_tpu=FLAGS.use_tpu,
-      reduced_factor=audio_featurizer.get_reduced_factor())
+      reduced_factor=audio_featurizer.get_reduced_factor(),
+      bert_config=lm_model_config,
+      bert_init_checkpoint=lm_init_checkpoint)
 
   estimator = tf.contrib.tpu.TPUEstimator(
       use_tpu=FLAGS.use_tpu,
