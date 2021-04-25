@@ -410,13 +410,13 @@ class Conformer(object):
               tf.logging.info("**** rnn_output ****")
               tf.logging.info(self.decoder_output)
 
-          with tf.variable_scope('cls/predictions'):
-            self.logits = tf.layers.dense(self.decoder_output, 
-                                    config.vocab_size, 
-                                    kernel_initializer=initializer)
+        with tf.variable_scope('cls/predictions'):
+          self.logits = tf.layers.dense(self.decoder_output, 
+                                  config.vocab_size, 
+                                  kernel_initializer=initializer)
 
-            tf.logging.info("*** logits ***")
-            tf.logging.info(self.logits)
+          tf.logging.info("*** logits ***")
+          tf.logging.info(self.logits)
 
   def get_unmasked_linear_proj(self):
     with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):

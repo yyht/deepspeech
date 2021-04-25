@@ -410,8 +410,8 @@ def model_fn_builder(model_config,
         encoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       decoder_params = []
-      for scope in ['conformer/decoder'
-                    # 'conformer/fc_module',
+      for scope in ['conformer/fc_module'
+                    'conformer/decoder',
                     'conformer/cls']:
         decoder_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
