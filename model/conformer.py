@@ -478,7 +478,7 @@ class Conformer(object):
             relative_position_type=self.config.mha_relative_position_type,
             is_training=is_training,
             is_global_bn=is_global_bn)
-      return conformer_block[-1], fc_output
+      return conformer_block[-1]
 
   def get_conv_downsampling_output(self):
     return self.unmasked_conv_subsampling
