@@ -394,7 +394,7 @@ class Conformer(object):
             tf.logging.info(self.decoder_output)
 
           elif decoder_type == 'rnn':
-            rnn_cell = tf.nn.rnn_cell.LSTMCell
+            rnn_cell = tf.nn.rnn_cell.GRUCell
             with tf.variable_scope("rnn"):
               self.decoder_output = rnn_block(self.fc_output, 
                                 rnn_cell=rnn_cell, 

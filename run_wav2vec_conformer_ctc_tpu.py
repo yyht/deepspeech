@@ -464,7 +464,7 @@ def model_fn_builder(model_config,
         [train_dec_op, 
         dec_learning_rate] = optimizer_fn(
           total_loss, 
-          learning_rate, 
+          learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0, 
           num_train_steps, 
           weight_decay_rate=FLAGS.weight_decay_rate,
           use_tpu=use_tpu,
