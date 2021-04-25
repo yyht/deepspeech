@@ -379,44 +379,44 @@ class Conformer(object):
       tf.logging.info("*** conformer_block ***")
       tf.logging.info(self.conformer_block)
 
-    if not is_pretraining:
-      with tf.variable_scope('decoder'):
-        if decoder_type == 'fc':
-          with tf.variable_scope('fc_module'):
-            self.decoder_output = fc_block(self.conformer_block[-1],
-                      fc_layers=config.fc_layers, 
-                      hidden_size=config.fc_hidden_size, 
-                      dropout_rate=config.fc_dropout_rate,
-                      is_training=is_training)
-            self.decoder_output = layer_norm(self.decoder_output)
+      if not is_pretraining:
+        with tf.variable_scope('decoder'):
+          if decoder_type == 'fc':
+            with tf.variable_scope('fc_module'):
+              self.decoder_output = fc_block(self.conformer_block[-1],
+                        fc_layers=config.fc_layers, 
+                        hidden_size=config.fc_hidden_size, 
+                        dropout_rate=config.fc_dropout_rate,
+                        is_training=is_training)
+              self.decoder_output = layer_norm(self.decoder_output)
 
-          tf.logging.info("**** fc_output ****")
-          tf.logging.info(self.decoder_output)
-
-        elif decoder_type == 'rnn':
-          rnn_cell = tf.nn.rnn_cell.LSTMCell
-          with tf.variable_scope("rnn"):
-            self.decoder_output = rnn_block(self.conformer_block[-1], 
-                              rnn_cell=rnn_cell, 
-                              rnn_hidden_size=config.rnn_hidden_size, 
-                              rnn_layers=config.rnn_layers,
-                              is_batch_norm=False if config.rnn_layers ==1 else config.is_rnn_batch_norm, 
-                              is_bidirectional=config.is_rnn_bidirectional, 
-                              is_training=is_training,
-                              time_major=config.time_major,
-                              sequence_length=reduced_length)
-            self.decoder_output = layer_norm(self.decoder_output)
-
-            tf.logging.info("**** rnn_output ****")
+            tf.logging.info("**** fc_output ****")
             tf.logging.info(self.decoder_output)
 
-        with tf.variable_scope('cls/predictions'):
-          self.logits = tf.layers.dense(self.decoder_output, 
-                                  config.vocab_size, 
-                                  kernel_initializer=initializer)
+          elif decoder_type == 'rnn':
+            rnn_cell = tf.nn.rnn_cell.LSTMCell
+            with tf.variable_scope("rnn"):
+              self.decoder_output = rnn_block(self.conformer_block[-1], 
+                                rnn_cell=rnn_cell, 
+                                rnn_hidden_size=config.rnn_hidden_size, 
+                                rnn_layers=config.rnn_layers,
+                                is_batch_norm=False if config.rnn_layers ==1 else config.is_rnn_batch_norm, 
+                                is_bidirectional=config.is_rnn_bidirectional, 
+                                is_training=is_training,
+                                time_major=config.time_major,
+                                sequence_length=reduced_length)
+              self.decoder_output = layer_norm(self.decoder_output)
 
-          tf.logging.info("*** logits ***")
-          tf.logging.info(self.logits)
+              tf.logging.info("**** rnn_output ****")
+              tf.logging.info(self.decoder_output)
+
+          with tf.variable_scope('cls/predictions'):
+            self.logits = tf.layers.dense(self.decoder_output, 
+                                    config.vocab_size, 
+                                    kernel_initializer=initializer)
+
+            tf.logging.info("*** logits ***")
+            tf.logging.info(self.logits)
 
   def get_unmasked_linear_proj(self):
     with tf.variable_scope('conformer', reuse=tf.AUTO_REUSE):
