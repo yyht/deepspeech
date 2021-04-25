@@ -203,9 +203,9 @@ class BertModel(object):
               use_one_hot_embeddings=use_one_hot_embeddings)
 
     with tf.variable_scope(scope, default_name="bert"):
-      if self.embedding_output.shape[-1] != bert_config.hidden_size:
+      if self.embedding_output.shape[-1] != config.hidden_size:
         self.embedding_output = tf.layers.dense(
-            self.embedding_output, bert_config.hidden_size,
+            self.embedding_output, config.hidden_size,
             name="embeddings_project")
         tf.logging.info("** apply embeddings project **")
 
