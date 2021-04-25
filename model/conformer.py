@@ -572,7 +572,7 @@ def rnn_block(inputs,
     with tf.variable_scope("layer_%d" % layer_idx):
       pre_output = rnn_layer(pre_output, 
                 rnn_cell=rnn_cell, 
-                rnn_hidden_size=rnn_hidden_size[layer_idx], 
+                rnn_hidden_size=rnn_hidden_size, 
                 is_batch_norm=is_batch_norm,
                 is_bidirectional=is_bidirectional, 
                 is_training=is_training,
