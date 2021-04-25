@@ -1,4 +1,4 @@
-nohup python ./run_wav2vec_conformer_ctc_tpu.py \
+nohup python ./run_wav2vec_conformer_bert_base.py \
 	--buckets gs://yyht_source/pretrain \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v1.json \
@@ -12,7 +12,7 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
 	--init_checkpoint chinese_asr_v1/conformer_pretrain_v1_linear/model.ckpt-231000 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v1_linear/model.ckpt-1000000 \
+	--bert_lm_init_checkpoint models/bert_base_relative_t5_sinusoidal_50g_official/model.ckpt-1000000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
 	--use_tpu True \
@@ -34,4 +34,5 @@ nohup python ./run_wav2vec_conformer_ctc_tpu.py \
 	--blank_index "0" \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char" \
-	--tune_mode "am"
+	--tune_mode "am" \
+	--is_pretraining True

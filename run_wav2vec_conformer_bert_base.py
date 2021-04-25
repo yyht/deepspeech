@@ -174,7 +174,7 @@ flags.DEFINE_string(
     "distributed_mode", "all_reduce",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 flags.DEFINE_bool("if_focal_ctc", False, "Whether to use TPU or GPU/CPU.")
-flags.DEFINE_bool("is_pretraining", False, "Whether to use TPU or GPU/CPU.")
+flags.DEFINE_bool("is_pretraining", True, "Whether to use TPU or GPU/CPU.")
 flags.DEFINE_bool("monitoring", False, "Whether to use TPU or GPU/CPU.")
 
 flags.DEFINE_string(
@@ -229,7 +229,6 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     "tune_mode", "am",
     "Initial checkpoint (usually from a pre-trained BERT model).")
-
 
 def get_masked_lm_output(bert_config, 
       input_tensor,
