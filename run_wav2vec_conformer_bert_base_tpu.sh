@@ -3,8 +3,8 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_char.json \
 	--bert_lm_config ./config/bert_small_relative_t5_config.json \
-	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_pretrain_v2_bert \
+	--train_file chinese_asr_v1/chinese_asr_v2_pretrain_file_list.txt \
+	--output_dir chinese_asr_v1/conformer_pretrain_v2_bert_small \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
