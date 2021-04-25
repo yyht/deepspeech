@@ -245,7 +245,7 @@ def get_masked_lm_output(bert_config,
   with tf.variable_scope("cls/predictions"):
     # We apply one more non-linear transformation before the output layer.
     # This matrix is not used after pre-training.
-    with tf.variable_scope("transform"):
+    with tf.variable_scope("transform", reuse=tf.AUTO_REUSE):
       input_tensor = tf.layers.dense(
           input_tensor,
           units=bert_config.hidden_size,
