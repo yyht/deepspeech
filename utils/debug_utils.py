@@ -8,6 +8,11 @@ import soundfile as sf
 import os
 import numpy as np
 
+from audio_io import audio_featurizer_tf
+from augment_io import augment
+from audio_io import read_audio
+import matplotlib.pylab as pylab
+
 eps = 1e-10
 
 # Function to read audio
