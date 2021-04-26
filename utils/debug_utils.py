@@ -9,9 +9,41 @@ import os
 import numpy as np
 
 from audio_io import audio_featurizer_tf
-from augment_io import augment
+from augment_io import augment_tf
 from audio_io import read_audio
 import matplotlib.pylab as pylab
+
+augment_config = {
+    "after":{
+        "time_masking":{
+            "num_masks": 5,
+            "mask_factor": 50,
+        "p_upperbound": 0.05
+        },
+        "freq_masking":{
+            "num_masks": 1,
+            "mask_factor": 20
+        }
+        
+    }
+}
+augment_api = augment_tf.Augmentation(augment_config, use_tf=True)
+
+speech_config = {
+    "sample_rate":8000,
+    "frame_ms":25,
+    "stride_ms":10,
+    "num_feature_bins":80,
+    "feature_type":"log_mel_spectrogram",
+    "preemphasis":0.97,
+    "normalize_signal":True,
+    "normalize_feature":True,
+    "center":True,
+    "max_length":160000
+}
+audio_featurizer = audio_featurizer_tf.TFSpeechFeaturizer(speech_config)
+audio_featurizer.update_length(2001)
+audio_featurizer.shape
 
 eps = 1e-10
 
