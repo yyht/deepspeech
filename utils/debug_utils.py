@@ -183,8 +183,8 @@ name_to_features = {
     "clean_audio_resample": tf.FixedLenFeature([], tf.string),
     "noise_audio_resample": tf.FixedLenFeature([], tf.string),
     "speaker_id":tf.FixedLenFeature([], tf.int64),
-    "transcript_id":tf.FixedLenFeature([128], tf.int64),
-    "transcript_pinyin_id":tf.FixedLenFeature([128], tf.int64),
+    "transcript_id":tf.FixedLenFeature([81], tf.int64),
+    "transcript_pinyin_id":tf.FixedLenFeature([81], tf.int64),
 }
 
 def train_input_fn(input_file, _parse_fn, name_to_features):
