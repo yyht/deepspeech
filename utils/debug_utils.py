@@ -225,4 +225,6 @@ def debug():
         break
 
     import matplotlib.pylab as pylab
+    import _pickle as pkl
+    pkl.dump(resp_features, open("/home/htxu91/data/debug.pkl", "wb"))
     pylab.imshow(resp_features['noise_feature'][0, :, :, 0].T, cmap="hot", origin='lower', aspect='auto', interpolation='nearest')
