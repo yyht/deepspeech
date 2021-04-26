@@ -213,7 +213,7 @@ def train_input_fn(input_file, _parse_fn, name_to_features):
 def debug():
 
     sess = tf.Session()
-    features = train_input_fn(['gs://yyht_source/pretrain/aishell_8000/train/chinese_asr_0.tfrecord'], '', name_to_features
+    features = train_input_fn(['gs://yyht_source/pretrain/chinese_asr_v1/aishell_8000/train/chinese_asr_0.tfrecord'], '', name_to_features
                    )
 
     sess.run(tf.group(tf.global_variables_initializer(), tf.tables_initializer()))
