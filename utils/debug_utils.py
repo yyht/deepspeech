@@ -8,9 +8,9 @@ import soundfile as sf
 import os
 import numpy as np
 
-from deepspeech.audio_io import audio_featurizer_tf
-from deepspeech.augment_io import augment
-from deepspeech.audio_io import read_audio
+from audio_io import audio_featurizer_tf
+from augment_io import augment
+from audio_io import read_audio
 import matplotlib.pylab as pylab
 
 eps = 1e-10
@@ -178,20 +178,19 @@ def train_input_fn(input_file, _parse_fn, name_to_features):
     features = iterator.get_next()
     return features
 
+def debug():
 
-sess = tf.Session()
+    sess = tf.Session()
+    features = train_input_fn(['gs://yyht_source/pretrain/aishell_8000/train/chinese_asr_0.tfrecord'], '', name_to_features
+                   )
 
+    sess.run(tf.group(tf.global_variables_initializer(), tf.tables_initializer()))
 
-features = train_input_fn(['gs://yyht_source/pretrain/aishell_8000/train/chinese_asr_0.tfrecord'], '', name_to_features
-               )
+    ppp = []
+    while True:
+    #     try:
+        resp_features = sess.run(features)
+        break
 
-sess.run(tf.group(tf.global_variables_initializer(), tf.tables_initializer()))
-
-ppp = []
-while True:
-#     try:
-    resp_features = sess.run(features)
-    break
-
-import matplotlib.pylab as pylab
-pylab.imshow(resp_features['noise_feature'][0, :, :, 0].T, cmap="hot", origin='lower', aspect='auto', interpolation='nearest')
+    import matplotlib.pylab as pylab
+    pylab.imshow(resp_features['noise_feature'][0, :, :, 0].T, cmap="hot", origin='lower', aspect='auto', interpolation='nearest')
