@@ -74,7 +74,7 @@ flags.DEFINE_string(
 
 flags.DEFINE_string(
     "bert_config_file", None,
-    "The config json file corresponding to the pre-trained BERT model. "
+    "The    88config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
 flags.DEFINE_string("task_name", None, "The name of the task to train.")
