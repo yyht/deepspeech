@@ -16,7 +16,7 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
 	--use_tpu True \
-	--tpu_name albert3 \
+	--tpu_name albert0 \
 	--num_tpu_cores 8 \
 	--eval_batch_size 256 \
 	--monitoring True \
