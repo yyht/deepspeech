@@ -787,7 +787,7 @@ def main(_):
   model_config = conformer.ConformerConfig.from_json_file(FLAGS.bert_config_file)
 
   lm_model_config = modeling_relative_position.BertConfig.from_json_file(FLAGS.bert_lm_config)
-
+  lm_config_name = FLAGS.bert_lm_config.split("/")[-1]
   tf_version = check_tf_version()
 
   config_name = FLAGS.bert_config_file.split("/")[-1]
@@ -814,6 +814,10 @@ def main(_):
   import os
   with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, config_name), "w") as fwobj:
     fwobj.write(model_config.to_json_string()+"\n")
+
+  import os
+  with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.output_dir, lm_config_name), "w") as fwobj:
+    fwobj.write(lm_model_config.to_json_string()+"\n")
 
   tpu_cluster_resolver = None
   if FLAGS.use_tpu and FLAGS.tpu_name:
