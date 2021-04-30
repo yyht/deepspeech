@@ -8,8 +8,8 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
-	--learning_rate 3e-5 \
-	--num_train_steps 500000 \
+	--learning_rate 5e-5 \
+	--num_train_steps 300000 \
 	--num_warmup_steps 20000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
