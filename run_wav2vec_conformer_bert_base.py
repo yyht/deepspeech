@@ -513,8 +513,8 @@ def model_fn_builder(model_config,
             tvars=am_params
             )
         else:
-          train_enc_op = tf.no_op(learning_rate)
-          enc_learning_rate = tf.constant()
+          train_enc_op = tf.no_op()
+          enc_learning_rate = tf.constant(learning_rate)
 
         if FLAGS.tune_mode in ['lm', 'all']:
           dec_lr = learning_rate if FLAGS.decoder_type == "fc" else learning_rate*2.0
