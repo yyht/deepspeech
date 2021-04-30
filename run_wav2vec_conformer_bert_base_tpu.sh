@@ -7,7 +7,7 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--output_dir chinese_asr_v1/conformer_pretrain_v2_bert \
 	--max_seq_length 512 \
 	--do_train True \
-	--train_batch_size 128 \
+	--train_batch_size 64 \
 	--learning_rate 1e-4 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
