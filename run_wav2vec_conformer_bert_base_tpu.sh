@@ -11,12 +11,12 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--learning_rate 1e-4 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-232000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-500000 \
 	--bert_lm_init_checkpoint models/bert_base_relative_t5_sinusoidal_50g_official/model.ckpt-1000000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
 	--use_tpu True \
-	--tpu_name albert1 \
+	--tpu_name albert3 \
 	--num_tpu_cores 8 \
 	--eval_batch_size 256 \
 	--monitoring True \

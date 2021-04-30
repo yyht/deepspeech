@@ -3,12 +3,12 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_char.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_char_adam_decay_fc \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-232000 \
+	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_char_fc_latest \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-500000 \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
-	--learning_rate 5e-5 \
+	--learning_rate 2e-5 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
 	--save_checkpoints_steps 1000 \
