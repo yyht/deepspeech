@@ -4,14 +4,14 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--bert_config_file ./config/conformer_pretrain_v2_char.json \
 	--bert_lm_config ./config/bert_base_relative_t5_config.json \
 	--train_file chinese_asr_v1/chinese_asr_v2_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_pretrain_v2_bert \
+	--output_dir chinese_asr_v1/conformer_pretrain_v2_bert_all \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 64 \
 	--learning_rate 1e-4 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-500000 \
+	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_bert/model.ckpt-439000 \
 	--bert_lm_init_checkpoint models/bert_base_relative_t5_sinusoidal_50g_official/model.ckpt-1000000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
