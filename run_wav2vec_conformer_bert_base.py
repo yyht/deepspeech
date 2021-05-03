@@ -481,7 +481,7 @@ def model_fn_builder(model_config,
         lm_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       for params in lm_params:
-        tf.logging.info("** lm_params **")
+        tf.logging.info("** lm_params ***")
         tf.logging.info(params)
 
       if FLAGS.optimizer_type == 'adafactor':
