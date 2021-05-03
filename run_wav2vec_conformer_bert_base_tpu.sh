@@ -34,6 +34,6 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--blank_index "0" \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "char" \
-	--tune_mode "am" \
+	--tune_mode "all" \
 	--is_pretraining True \
 	--optimizer_type "adafactor"

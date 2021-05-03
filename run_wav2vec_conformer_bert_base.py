@@ -472,7 +472,7 @@ def model_fn_builder(model_config,
         am_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       for params in am_params:
-        tf.logging.info("** am_params **")
+        tf.logging.info("****** am_params *****")
         tf.logging.info(params)
 
       lm_params = []
@@ -481,7 +481,7 @@ def model_fn_builder(model_config,
         lm_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       for params in lm_params:
-        tf.logging.info("** lm_params **")
+        tf.logging.info("** lm_params ***")
         tf.logging.info(params)
 
       if FLAGS.optimizer_type == 'adafactor':
@@ -490,7 +490,7 @@ def model_fn_builder(model_config,
         tf.logging.info(optimizer_fn)
       elif FLAGS.optimizer_type == "adamax":
         optimizer_fn = naive_create_adamax_optimizer_no_global
-        tf.logging.info("** adamax **")
+        tf.logging.info("***** adamax **")
         tf.logging.info(optimizer_fn)
       elif FLAGS.optimizer_type == 'adam_decay':
         optimizer_fn = naive_create_optimizer_no_global
