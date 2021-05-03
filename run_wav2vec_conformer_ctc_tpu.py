@@ -435,7 +435,7 @@ def model_fn_builder(model_config,
 
       if FLAGS.optimizer_type == 'adafactor':
         optimizer_fn = naive_create_adafactor_optimizer_no_global
-        tf.logging.info("** adafactor **")
+        tf.logging.info("*** adafactor **")
         tf.logging.info(optimizer_fn)
       elif FLAGS.optimizer_type == "adamax":
         optimizer_fn = naive_create_adamax_optimizer_no_global
