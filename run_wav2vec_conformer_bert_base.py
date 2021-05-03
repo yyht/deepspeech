@@ -472,7 +472,7 @@ def model_fn_builder(model_config,
         am_params += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 
       for params in am_params:
-        tf.logging.info("**** am_params **")
+        tf.logging.info("**** am_params ****")
         tf.logging.info(params)
 
       lm_params = []
