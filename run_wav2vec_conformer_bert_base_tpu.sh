@@ -8,7 +8,7 @@ nohup python3 ./run_wav2vec_conformer_bert_base.py \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 64 \
-	--learning_rate 1e-4 \
+	--learning_rate 5e-5 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
 	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_bert/model.ckpt-439000 \
