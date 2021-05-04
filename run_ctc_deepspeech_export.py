@@ -213,7 +213,7 @@ def create_model(model_config,
         decoded_logits[:, :, blank_index:blank_index + 1],
     ],
                               axis=2)
-    tf.logging.info("*** modify blank index **")
+    tf.logging.info("****** modify blank index **")
     tf.logging.info(blank_index)
     tf.logging.info( _get_dim(decoded_logits, 2) - 1)
 
@@ -228,7 +228,7 @@ def create_model(model_config,
   decoded = tf.to_int32(decoded_path[0])
   decoded_path = tf.sparse_tensor_to_dense(decoded)
   decoded_path += 1
-  
+
   return (decoded_path, log_probability, logits)
 
 def model_fn_builder(model_config, 
