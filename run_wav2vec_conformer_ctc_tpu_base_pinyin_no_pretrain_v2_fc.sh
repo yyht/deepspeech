@@ -3,13 +3,13 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_pinyin.json \
 	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
-	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_fc_latest \
-	--init_checkpoint chinese_asr_v1/conformer_pretrain_v2_linear/model.ckpt-500000 \
+	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_fc_latest_aug \
+	--init_checkpoint chinese_asr_v1/conformer_v2_linear_ctc_pinyin_fc_latest/model.ckpt-500000 \
 	--max_seq_length 512 \
 	--do_train True \
 	--train_batch_size 128 \
 	--learning_rate 5e-5 \
-	--num_train_steps 1000000 \
+	--num_train_steps 500000 \
 	--num_warmup_steps 20000 \
 	--save_checkpoints_steps 1000 \
 	--iterations_per_loop 1000 \
@@ -25,7 +25,7 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--circle_margin 0.25 \
 	--circle_gamma 32 \
 	--audio_featurizer_config_path chinese_asr_v1/audio_featurizer_config.json \
-	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config.json \
+	--featurizer_aug_config_path chinese_asr_v1/featurizer_aug_config_v1.json \
 	--target_feature_mode linear \
 	--monitoring true \
 	--transcript_seq_length 81 \
