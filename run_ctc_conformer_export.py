@@ -229,7 +229,7 @@ def create_model(model_config,
   decoded = tf.to_int32(decoded_path[0])
   decoded_path = tf.sparse_tensor_to_dense(decoded)
 
-  return (decoded_path, log_probability, logits)
+  return (decoded_path, reduced_length, log_probability, logits)
 
 def model_fn_builder(model_config, 
                 init_checkpoint,
@@ -259,6 +259,7 @@ def model_fn_builder(model_config,
     is_training = False
 
     (decoded_path, 
+      reduced_length,
     log_probability, 
     logits) = create_model(model_config, 
                 audio_feature,
@@ -288,12 +289,14 @@ def model_fn_builder(model_config,
           mode=mode,
           predictions={"decoded_path": decoded_path,
                       "log_probability": log_probability,
-                      "logits":logits},
+                      "logits":logits,
+                      "reduced_length":reduced_length},
           export_outputs={
               "output":tf.estimator.export.PredictOutput(
                           {"decoded_path": decoded_path,
                           "log_probability": log_probability,
-                          "logits":logits}
+                          "logits":logits,
+                          "reduced_length":reduced_length}
                       )
           })
     return output_spec

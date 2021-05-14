@@ -30,3 +30,5 @@ alpha=0.99
 gamma=1.0
 output_mode="char"
 blank_index=-1
+top_paths=1
+beam_width=1
