@@ -1,0 +1,14 @@
+input_path=ASR/chinese/gaode/train-16000-gd_chuxing_xingzhong_202012eval/
+input_meta_path=ASR/chinese/gaode/train-16000-gd_chuxing_xingzhong_202012eval/train.scp
+input_transcript_path=ASR/chinese/gaode/train-16000-gd_chuxing_xingzhong_202012eval/transcription.txt
+input_speaker_meta_path=ASR/chinese/gaode/train-16000-gd_chuxing_xingzhong_202012eval/spk.txt
+noise_path=ASR/chinese/audioset/
+noise_meta_path=ASR/chinese/audioset/MS_SNSD/noise_meta.txt
+output_path=ASR/chinese/gaode/train-16000-gd_chuxing_xingzhong_202012eval/train_8000
+sample_rate=16000
+target_sample_rate=8000
+char_vocab=ASR/chinese/chinese_asr/v1/chinese_char5k_all.txt
+pinyin_vocab=ASR/chinese/chinese_asr/v1/chinese_syllable5k_all.txt
+gender_vocab=ASR/chinese/chinese_asr/v1/gender_vocab.txt
+spk_vocab=ASR/chinese/chinese_asr/v1/spk_vocab.txt
+dialect_vocab=ASR/chinese/chinese_asr/v1/dialect_vocab.txt

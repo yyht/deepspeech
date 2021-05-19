@@ -71,6 +71,15 @@ flags.DEFINE_string(
   "pinyin_vocab", "",
   "Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+  "input_transcript_path", "",
+  "Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
+  "data_type", "",
+  "Input TF example files (can be a glob or comma separated).")
+
+
 from inference.saved_model_inference import SavedModelInfer
 import os
 
@@ -86,16 +95,16 @@ def shape_list(x, out_type=tf.int32):
   return [dynamic[i] if s is None else s for i, s in enumerate(static)]
 
 class TFFeat(object):
-  def __init__(self, config):
-    self.config = config
+  def __init__(self, speech_config):
+    self.speech_config = speech_config
     self.graph = tf.Graph()
 
   def load_sess(self):
 
     with self.graph.as_default():
 
-      self.audio_featurizer = audio_featurizer_tf.TFSpeechFeaturizer(speech_config)
-      self.max_feature_length = self.audio_featurizer.get_length_from_duration(20)
+      self.audio_featurizer = audio_featurizer_tf.TFSpeechFeaturizer(self.speech_config)
+      self.max_feature_length = int(self.audio_featurizer.get_length_from_duration(20))
       self.audio_featurizer.update_length(self.max_feature_length)
     
       self.audio_tensor =  tf.placeholder(tf.float32, [None], name='audio')
@@ -111,6 +120,7 @@ class TFFeat(object):
 
   def feat_sess(self, input_audio):
     with self.graph.as_default():
+      try:
         [audio_feature, 
         feature_seq_length] = self.sess.run(
           [
@@ -121,11 +131,13 @@ class TFFeat(object):
             self.audio_tensor:input_audio
           }
           )
+      except:
+        audio_feature = []
+        feature_seq_length = 0
     return [audio_feature, 
             feature_seq_length]
 
 from dataset import tokenization
-from pypinyin import pinyin, lazy_pinyin, Style
 pinyin_dict = {
   "pinyin2id":{},
   "id2pinyin":{}
@@ -138,8 +150,10 @@ with tf.gfile.Open(os.path.join(FLAGS.buckets, FLAGS.pinyin_vocab), "r") as frob
     pinyin_dict['id2pinyin'][index] = content
 
 tf.logging.info("** succeeded in loading pinyin dict **")
+print(len(pinyin_dict['pinyin2id']), "==pinyin==")
 
-with tf.gfile.Open(FLAGS.audio_featurizer_config_path, "r") as frobj:
+audio_featurizer_config_path = os.path.join(FLAGS.buckets, FLAGS.audio_featurizer_config_path)
+with tf.gfile.Open(audio_featurizer_config_path, "r") as frobj:
   audio_featurizer_config = json.load(frobj)
 
 feat_api = TFFeat(audio_featurizer_config)
@@ -169,6 +183,9 @@ with tf.gfile.Open(input_meta_path, "r") as f:
       "file_path":file_path
       })
 
+print(len(input_meta_lst), "==input_meta_lst==")
+
+
 total_batch = int(len(input_meta_lst)/num_workers)
 start_index = FLAGS.task_index * total_batch
 
@@ -193,12 +210,30 @@ with tf.gfile.Open(transcript_path, "r") as csvfile:
     item_dict = dict(zip(key, content))
     transcript_dict[item_dict['UtteranceID']]= item_dict 
 
-output_path = os.path.join(FLAGS.buckets, FLAGS.output_path, 'am_{}.json'.format(FLAGS.task_index))
+print(len(transcript_dict), "==transcript_dict==")
+
+output_path = os.path.join(FLAGS.buckets, FLAGS.output_path, FLAGS.data_type, 'am_{}.json'.format(FLAGS.task_index))
 fwobj = tf.gfile.Open(output_path, "w")
+
+import opencc
+cc = opencc.OpenCC('t2s')
+
+from dataset import unit_convert
 
 for index, item_dict in enumerate(current_meta_lst):
   item_name = item_dict['file_name']
   item_path = item_dict['file_path']
+  utterance_id = item_name
+
+  # try:
+  if utterance_id not in transcript_dict:
+    tf.logging.info(utterance_id)
+    continue
+  transcript = transcript_dict[utterance_id]['Transcription']
+  transcript = tokenization.convert_to_unicode(transcript).lower()
+  pinyin_transcript = unit_convert.char2pinyin(transcript)
+  # except:
+  #   continue
 
   data_path = os.path.join(FLAGS.buckets, FLAGS.input_path, item_path)  
   wave = read_audio.read_raw_audio(data_path, sample_rate=FLAGS.sample_rate)
@@ -209,6 +244,8 @@ for index, item_dict in enumerate(current_meta_lst):
   [audio_feature, 
   feature_seq_length] = feat_api.feat_sess(wave)
 
+  if feature_seq_length == 0:
+    continue
   am_resp = model_api.infer(
         {
             "audio_feature":[audio_feature],
@@ -219,14 +256,17 @@ for index, item_dict in enumerate(current_meta_lst):
   resp_lst = model_api.ctc_beam_decode(am_resp, pinyin_dict['id2pinyin'])
 
   utterance_id = item_name
-  pinyin_transcript = transcript_dict[utterance_id]['pinyin_transcription']
-  pinyin_transcript = tokenization.convert_to_unicode(pinyin_transcript).lower()
-
+  
   fwobj.write(
     json.dumps({
       "hyp":resp_lst,
-      "ref":pinyin_transcript
+      "ref":pinyin_transcript,
+      "utterance_id":utterance_id,
+      "text":transcript
       })+"\n"
     )
+
+  if np.mod(index, 1000) == 0:
+    print(pinyin_transcript, "===", resp_lst[0][0:5])
 
 fwobj.close()

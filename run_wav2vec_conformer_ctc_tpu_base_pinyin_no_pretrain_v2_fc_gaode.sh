@@ -2,7 +2,7 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--buckets gs://yyht_source/pretrain \
 	--data_dir chinese_asr_v1/ \
 	--bert_config_file ./config/conformer_pretrain_v2_pinyin.json \
-	--train_file chinese_asr_v1/chinese_asr_v1_pretrain_file_list.txt \
+	--train_file chinese_asr_v1/chinese_asr_gaode_v1_pretrain_file_lst.txt \
 	--output_dir chinese_asr_v1/conformer_v2_linear_ctc_pinyin_fc_gaode \
 	--init_checkpoint chinese_asr_v1/conformer_v2_linear_ctc_pinyin_fc_latest/model.ckpt-500000 \
 	--max_seq_length 512 \

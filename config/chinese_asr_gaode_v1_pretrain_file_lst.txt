@@ -1,0 +1,9 @@
+aishell_8000/train/chinese_asr_0.tfrecord
+aishell_8000/train/chinese_asr_1.tfrecord
+aidatatang_200zh_8000/train/chinese_asr_0.tfrecord
+aidatatang_200zh_8000/train/chinese_asr_1.tfrecord
+st_cmds_8000/all/chinese_asr_0.tfrecord
+st_cmds_8000/all/chinese_asr_1.tfrecord
+oslr_8000/train/chinese_asr_0.tfrecord
+oslr_8000/train/chinese_asr_1.tfrecord
+gaode/chinese_asr_0.tfrecord

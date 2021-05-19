@@ -74,9 +74,9 @@ class SavedModelInfer(object):
         hypothesis = ' '.join([id2output[no] for no in resp['decoded_path'][i][batch_id]])
         output_lst[batch_id].append({
           "hyp_{}".format(i): {
-          "score": resp['log_probability'][batch_id][i],
+          "score": str(resp['log_probability'][batch_id][i]),
           "text": hypothesis
-          },
+          }
         }
       )
 

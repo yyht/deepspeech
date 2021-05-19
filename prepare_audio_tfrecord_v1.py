@@ -164,10 +164,14 @@ def tokenize(input_text, input_pinyin_text, max_length=81):
   input_pinyin_ids = []
   input_token_ids = []
   for item in input_pinyin_tokens:
+    if item not in pinyin_dict['pinyin2id']:
+      continue
     if pinyin_dict['pinyin2id'][item] == 0:
       continue
     input_pinyin_ids.append(pinyin_dict['pinyin2id'][item])
   for item in input_tokens:
+    if item not in char_dict['char2id']:
+      continue
     if char_dict['char2id'][item] == 0:
       continue
     input_token_ids.append(char_dict['char2id'][item])
@@ -322,10 +326,10 @@ for index, item_dict in enumerate(current_meta_lst):
   pinyin_transcript = tokenization.convert_to_unicode(pinyin_transcript).lower()
 
   speaker_string = transcript_dict[item_name]['SpeakerID']
-  speaker_id = spk_dict["spk2id"][speaker_string]
+  speaker_id = 0 #spk_dict["spk2id"][speaker_string]
   
-  gender_id = gender_dict["gender2id"][input_speaker_meta_dict[speaker_string]['Gender'].lower()]
-  dialect_id = dialect_dict["dialect2id"][input_speaker_meta_dict[speaker_string]['Dialect']]
+  gender_id = 0 #gender_dict["gender2id"][input_speaker_meta_dict[speaker_string]['Gender'].lower()]
+  dialect_id = 0 #dialect_dict["dialect2id"][input_speaker_meta_dict[speaker_string]['Dialect']]
     
   clean_path = os.path.join(FLAGS.buckets, FLAGS.input_path, item_path)
   
