@@ -2,10 +2,12 @@
 try:
   import soundfile as wavfile
   soundfile_flag = True
-  import librosa
 except:
   import scipy.io.wavfile as wavfile
   soundfile_flag = False
+try:
+  import librosa
+except:
   librosa = None
 import tensorflow as tf
 from tensorflow.python.ops import gen_audio_ops as contrib_audio

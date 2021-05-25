@@ -248,7 +248,8 @@ print(input_meta_path, "===input_meta_path===")
 
 input_meta_lst = []
 with tf.gfile.Open(input_meta_path, "r") as f:
-  for line in f:
+  for index, line in enumerate(f):
+    # print(index, line, "==index==")
     content = line.strip().split("\t")
     file_name = content[0]
     file_path = content[1]
@@ -322,6 +323,8 @@ for index, item_dict in enumerate(current_meta_lst):
   token_transcript = transcript_dict[utterance_id]['token_transcription']
   token_transcript = tokenization.convert_to_unicode(token_transcript).lower()
 
+  if not transcript_dict[utterance_id].get("pinyin_transcription", {}):
+    continue
   pinyin_transcript = transcript_dict[utterance_id]['pinyin_transcription']
   pinyin_transcript = tokenization.convert_to_unicode(pinyin_transcript).lower()
 
@@ -333,7 +336,7 @@ for index, item_dict in enumerate(current_meta_lst):
     
   clean_path = os.path.join(FLAGS.buckets, FLAGS.input_path, item_path)
   
-  noise_id = np.random.choice(np.arange(0, len(noise_meta_lst)), p=[0.8, 0.1, 0.1])
+  noise_id = np.random.choice(np.arange(0, len(noise_meta_lst)), p=[0.05, 0.05, 0.00, 0.3, 0.3, 0.3])
 
   noise_sample_name = noise_meta_lst[noise_id]['fname']
   noise_sample_path = os.path.join(FLAGS.buckets, FLAGS.noise_path, noise_sample_name)

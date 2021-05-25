@@ -37,8 +37,8 @@ def noise_synthesizer(clean_path,
                     target_sample_rate=8000,
                     pinyin_id=None,
                     tf_string_api=None):
-  clean_speech = read_audio.read_raw_audio(clean_path, sample_rate=sample_rate)
-  noise_wave = read_audio.read_raw_audio(noise_path, sample_rate=sample_rate)
+  clean_speech = read_audio.read_raw_audio(clean_path, sample_rate=target_sample_rate)
+  noise_wave = read_audio.read_raw_audio(noise_path, sample_rate=target_sample_rate)
 
   clean_speech_len = clean_speech.shape[0]
   noise_wave_len = noise_wave.shape[0]

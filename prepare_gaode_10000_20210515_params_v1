@@ -1,0 +1,14 @@
+input_path=ASR/chinese/gaode/
+input_meta_path=ASR/chinese/gaode/metadata_10000_20210515/scp.txt
+input_transcript_path=ASR/chinese/gaode/metadata_10000_20210515/trans.txt
+input_speaker_meta_path=ASR/chinese/gaode/metadata_10000_20210515/spk.txt
+noise_path=ASR/chinese/audioset/
+noise_meta_path=ASR/chinese/audioset/MS_SNSD/noise_meta.txt
+output_path=ASR/chinese/gaode/10000_20210515_8000/train
+sample_rate=8000
+target_sample_rate=8000
+char_vocab=ASR/chinese/chinese_asr/v1/chinese_char5k_all.txt
+pinyin_vocab=ASR/chinese/chinese_asr/v1/chinese_syllable5k_all.txt
+gender_vocab=ASR/chinese/chinese_asr/v1/gender_vocab.txt
+spk_vocab=ASR/chinese/chinese_asr/v1/spk_vocab.txt
+dialect_vocab=ASR/chinese/chinese_asr/v1/dialect_vocab.txt
