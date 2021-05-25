@@ -285,7 +285,7 @@ def model_fn_builder(model_config,
     scaffold_fn = None
     if init_checkpoint:
       (assignment_map, initialized_variable_names
-      ) = deepspeech.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
+      ) = conformer.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
         def tpu_scaffold():
           tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
