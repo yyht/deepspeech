@@ -8,7 +8,7 @@ nohup python3 ./run_wav2vec_conformer_tpu.py \
 	--do_train True \
 	--init_checkpoint chinese_asr_v1/conformer_v2_linear_ctc_char_fc_latest/model.ckpt-500000 \
 	--train_batch_size 256 \
-	--learning_rate 3e-4 \
+	--learning_rate 1e-4 \
 	--num_train_steps 500000 \
 	--num_warmup_steps 2000 \
 	--save_checkpoints_steps 1000 \
