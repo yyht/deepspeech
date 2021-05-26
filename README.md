@@ -36,4 +36,10 @@ We are initially releasing fintuned models(evaluated on CER for syllable and tra
 | --- | --- | --- | --- | ---  | --- |---  | --- |
 | Conformer-base | 8 | 768 | 286M | 3.378| 7.544| 11.997  | [link](https://drive.google.com/file/d/1B_suFqxt2pWgzFeRb_CwEv-YtmWVioVW/view?usp=sharing) |
 
+## Noting
+
+We just use ctc-greedy-decoder since beam-search could not bring any improvments. If you apply syllable-based Ngram model, it could achieve better results.
+
+If you want to decode to char, you will need domain-specific language model to transfor syllable to char using HMM, machine-translation-based models for really applications.
+
 
