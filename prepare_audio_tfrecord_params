@@ -1,9 +1,0 @@
-input_path=ASR/chinese/oslr/
-input_meta_path=ASR/chinese/oslr/metadata/train.scp
-input_transcript_path=ASR/chinese/oslr/metadata/TRANS.txt
-input_speaker_meta_path=ASR/chinese/oslr/metadata/SPKINFO.txt
-noise_path=ASR/chinese/audioset/
-noise_meta_path=ASR/chinese/audioset/MS_SNSD/noise_meta.txt
-output_path=ASR/chinese/oslr_8000_v1
-sample_rate=16000
-target_sample_rate=8000
