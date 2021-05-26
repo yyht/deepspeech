@@ -187,9 +187,10 @@ def tokenize(input_text, input_pinyin_text, max_length=81):
   input_token_ids += [0]*(max_length-len(input_token_ids))
   input_pinyin_ids += [0]*(max_length-len(input_pinyin_ids))
   
-  assert max(input_token_ids) <= len(char_dict['char2id']) - 1
-  assert max(input_pinyin_ids) <= len(pinyin_dict['pinyin2id']) - 1
-  return input_token_ids, input_pinyin_ids
+  if max(input_token_ids) <= len(char_dict['char2id'])-1 and max(input_pinyin_ids) <= len(pinyin_dict['pinyin2id'])-1:
+    return input_token_ids, input_pinyin_ids
+  else:
+    return "", ""
 
 num_workers = len(FLAGS.worker_hosts.split(","))
 print(FLAGS.task_index, "====task index====", FLAGS.worker_hosts)
@@ -312,6 +313,10 @@ class TFAPI(object):
 
 tf_string_api = TFAPI(FLAGS.target_sample_rate)
 
+def get_length(token_id_list):
+  valid_item = [item for item in token_id_list if item != 0]
+  return len(valid_item)
+
 for index, item_dict in enumerate(current_meta_lst):
   item_name = item_dict['file_name']
   item_path = item_dict['file_path']
@@ -345,6 +350,7 @@ for index, item_dict in enumerate(current_meta_lst):
   pinyin_id] = tokenize(token_transcript, 
                         pinyin_transcript, 
                         max_length=81)
+
   if not transcript_id or not pinyin_id:
     item_dict['transcript'] = token_transcript
     item_dict['clean_path'] = clean_path
@@ -354,7 +360,8 @@ for index, item_dict in enumerate(current_meta_lst):
           ensure_ascii=False
         )+"\n"
       )
-    print(item_dict, "==invalid-meta of transcript_id==")
+    tf.logging.info("==invalid-meta of transcript_id==")
+    tf.logging.info(item_dict)
     continue
 
   if not tf.gfile.Exists(clean_path):
@@ -366,11 +373,21 @@ for index, item_dict in enumerate(current_meta_lst):
           ensure_ascii=False
         )+"\n"
       )
-    print(item_dict, "==clean_path not exists==")
+    tf.logging.info("==clean_path not exists==")
+    tf.logging.info(item_dict)
     continue
   
   valid_flag = False
   feat_tmp_time = time.time()
+  if get_length(transcript_id) <= 2 and get_length(pinyin_id) <= 2:
+    continue
+  if get_length(transcript_id) != get_length(pinyin_id):
+    continue
+  
+  tf.logging.info("** check length of transcript_id and pinyin_id")
+  tf.logging.info(get_length(transcript_id))
+  tf.logging.info(get_length(pinyin_id))
+
   for t in range(10):
     try:
       [example, ori_shape, resample_shape] = pai_write_tfrecord_with_noise_mixup.noise_synthesizer(
@@ -397,15 +414,11 @@ for index, item_dict in enumerate(current_meta_lst):
   valid_write_flag = False
   write_tmp_time = time.time()
   if valid_flag:
-    for t in range(10):
-      try:
-        tfrecord_writer.write(example.SerializeToString())
-        valid_write_flag = True
-        write_time += (time.time() - write_tmp_time)
-        break
-      except:
-        time.sleep(0.01)
-        continue
+    time.sleep(0.005)
+    tfrecord_writer.write(example.SerializeToString())
+    valid_write_flag = True
+    write_time += (time.time() - write_tmp_time)
+    
   if not valid_flag or not valid_write_flag:
     item_dict['transcript'] = token_transcript
     item_dict['clean_path'] = clean_path
@@ -416,9 +429,12 @@ for index, item_dict in enumerate(current_meta_lst):
         )+"\n"
       )
     if not valid_flag:
-      print(item_dict, "==invalid-process of clean_path==")
+      tf.logging.info("==invalid-process of clean_path==")
+      tf.logging.info(item_dict)
+
     if not valid_write_flag:
-      print(item_dict, "==invalid-write process of clean_path==")
+      tf.logging.info("==invalid-write process of clean_path==")
+      tf.logging.info(item_dict)
     continue
   fwobj.write(
       json.dumps(
@@ -432,6 +448,7 @@ for index, item_dict in enumerate(current_meta_lst):
   if np.mod(index, 100) == 0 and index != 0:
     print(ori_shape, "==mode 100==", resample_shape, item_dict)
     print(time.time()-start_time, write_time, feature_time)
+    print(transcript_id, pinyin_id)
     start_time = time.time()
     write_time = 0
     feature_time = 0

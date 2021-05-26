@@ -15,9 +15,9 @@ pai_command="
 pai -name tensorflow1120
     -project algo_public
     -Dscript='file://${model_zip}'
-    -Dcluster='{\"worker\":{\"count\":100, \"gpu\":0, \"cpu\":400, \"memory\":16000}}'
-    -DentryFile='./deepspeech/prepare_audio_tfrecord_v1.py' 
-    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/prepare_gaode_10000_20210519_params_v1'
+    -Dcluster='{\"worker\":{\"count\":100, \"gpu\":0, \"cpu\":100, \"memory\":2000}}'
+    -DentryFile='./deepspeech/test_tfrecord.py' 
+    -DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/deepspeech/test_tfrecord_params'
     -Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com'
 ;
 "

@@ -1,0 +1,7 @@
+*.pyc
+*.ipynb
+*.log
+*.DS_Store
+run_prepare*.sh
+run_ctc*.sh
+pai*.sh
