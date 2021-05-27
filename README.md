@@ -20,6 +20,9 @@ Different to BERT, we add T5-style relative position attention.
 The pretraining is based on Wave2vec2.0. The core difference is replace VQ_VAE with linear layer projection the same to (Pushing the Limits of Semi-Supervised Learning for Automatic Speech Recognition).
 
 Besides, we also replace InfoNCE with circle-loss for Mask prediction for better representation learning.
+You can download from
+[link](https://drive.google.com/file/d/1srnWCrrLdiR4kepB_3fBFcVlGbfAAFfY/view?usp=sharing)
+
 
 ## CTC-finetuning
 After pretraining, we do ctc-fintuning on labeled data. The acoustics unit is chinese-syllable about 1200 syllables from 5k chinese char.
