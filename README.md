@@ -43,6 +43,6 @@ We are initially releasing fintuned models(evaluated on CER for syllable and tra
 
 We just use ctc-greedy-decoder since beam-search could not bring any improvments. If you apply syllable-based Ngram model, it could achieve better results.
 
-If you want to decode to char, you will need domain-specific language model to transfor syllable to char using HMM, machine-translation-based models for really applications.
+If you want to decode to char, you will need domain-specific language model to transfor syllable to char using HMM, machine-translation-based models for real applications.
 
 
