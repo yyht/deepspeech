@@ -393,6 +393,7 @@ def model_fn_builder(model_config,
       tf.logging.info("** apply noise-signal aug loss **")
     else:
       total_loss = clean_aug_loss
+      tf.logging.info("** apply clean-signal aug loss **")
 
     tvars = tf.trainable_variables()
     initialized_variable_names = {}
