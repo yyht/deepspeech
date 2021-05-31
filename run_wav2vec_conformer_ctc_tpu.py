@@ -393,6 +393,7 @@ def model_fn_builder(model_config,
       tf.logging.info("** apply noise-signal aug loss **")
     else:
       total_loss = clean_aug_loss
+      noise_aug_loss = tf.constant(0.0)
       tf.logging.info("** apply clean-signal aug loss **")
 
     tvars = tf.trainable_variables()
@@ -489,7 +490,8 @@ def model_fn_builder(model_config,
           train_op = global_step.assign(new_global_step)
 
       hook_dict = {}
-      hook_dict['noise_loss'] = noise_aug_loss
+      if FLAGS.if_noise_loss == "none":
+        hook_dict['noise_loss'] = noise_aug_loss
       hook_dict['clean_loss'] = clean_aug_loss
       reduced_length = audio_utils.get_reduced_length(feature_seq_length, reduced_factor)
       
