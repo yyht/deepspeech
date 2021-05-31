@@ -216,6 +216,11 @@ flags.DEFINE_string(
     "decoder_type", "fc",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
+flags.DEFINE_string(
+    "if_noise_loss", "none",
+    "Initial checkpoint (usually from a pre-trained BERT model).")
+
+
 def create_model(model_config, 
                 ipnut_features,
                 is_training,
@@ -365,25 +370,29 @@ def model_fn_builder(model_config,
         if_calculate_loss=True,
         input_length=feature_seq_length)
 
-    (noise_aug_loss, 
-    noise_aug_per_example_loss, 
-    noise_aug_logits,
-    noise_aug_audio_embedding,
-    noise_valid_loss_mask) = create_model(
-        model_config=model_config,
-        ipnut_features=noise_aug_feature,
-        input_transcripts=transcript_id,
-        is_training=is_training,
-        ctc_loss_type=ctc_loss_type,
-        # unique_indices=(features['unique_labels'],
-        #                 features['unique_indices']),
-        unique_indices=None,
-        if_calculate_loss=True,
-        input_length=feature_seq_length)
+    if FLAGS.if_noise_loss == "noise_loss":
+      (noise_aug_loss, 
+      noise_aug_per_example_loss, 
+      noise_aug_logits,
+      noise_aug_audio_embedding,
+      noise_valid_loss_mask) = create_model(
+          model_config=model_config,
+          ipnut_features=noise_aug_feature,
+          input_transcripts=transcript_id,
+          is_training=is_training,
+          ctc_loss_type=ctc_loss_type,
+          # unique_indices=(features['unique_labels'],
+          #                 features['unique_indices']),
+          unique_indices=None,
+          if_calculate_loss=True,
+          input_length=feature_seq_length)
 
-    total_loss = (clean_aug_loss + noise_aug_loss)
-    # total_loss = (noise_loss + clean_loss)
-    total_loss = total_loss / 2.0
+      total_loss = (clean_aug_loss + noise_aug_loss)
+      # total_loss = (noise_loss + clean_loss)
+      total_loss = total_loss / 2.0
+      tf.logging.info("** apply noise-signal aug loss **")
+    else:
+      total_loss = clean_aug_loss
 
     tvars = tf.trainable_variables()
     initialized_variable_names = {}

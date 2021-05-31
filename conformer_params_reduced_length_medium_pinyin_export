@@ -1,10 +1,10 @@
 data_dir=ASR/chinese/
 bert_config_file="./deepspeech/config/conformer_pretrain_v2_pinyin.json"
 vocab_file="./deepspeech/data/chinese_vocab/chinese_char5k_all.txt"
-output_dir="ASR/chinese/models/conformer_base_pretrained_ctc_pinyin/"
+output_dir="ASR/chinese/models/conformer_base_gaode/"
 train_file="ASR/chinese/chinese_asr/v1/chinese_asr_v1_pretrain_file_list.txt"
 train_batch_size=8
-init_checkpoint="ASR/chinese/models/conformer_base_pretrained_ctc_pinyin/model.ckpt-500000"
+init_checkpoint="ASR/chinese/models/conformer_base_gaode/model.ckpt-196000"
 num_gpus=1
 num_accumulated_batches=1
 learning_rate=1e-4

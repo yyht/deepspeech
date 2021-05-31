@@ -33,4 +33,5 @@ nohup python3 ./run_wav2vec_conformer_ctc_tpu.py \
 	--ctc_loss_type "dense_ctc" \
 	--output_mode "pinyin" \
 	--optimizer_type "adam_decay" \
-	--decoder_type "fc"
+	--decoder_type "fc" \
+	--if_noise_loss "none"
