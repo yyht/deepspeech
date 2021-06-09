@@ -122,9 +122,9 @@ flags.DEFINE_float("num_train_epochs", 3.0,
                    "Total number of training epochs to perform.")
 flags.DEFINE_float("train_examples", 1000000.0,
                    "Total number of training epochs to perform.")
-flags.DEFINE_integer("save_checkpoints_steps", 1000,
+flags.DEFINE_integer("save_checkpoints_steps", 100000,
                      "How often to save the model checkpoint.")
-flags.DEFINE_integer("log_step_count_steps", 100,
+flags.DEFINE_integer("log_step_count_steps", 1000,
                      "How many steps to make in each estimator call.")
 flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
